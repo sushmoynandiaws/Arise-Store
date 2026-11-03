@@ -116,13 +116,13 @@ type Market = {
 const Context = createContext<Market>(null!);
 const useMarket = () => useContext(Context);
 function CatalogRefreshNotice() {
-  const { catalog, catalogError, reloadCatalog } = useMarket();
+  const { catalog, catalogError, reloadCatalog, sessionError, refreshSession } = useMarket();
   const { lang } = useLang();
   const { pathname } = useLocation();
   if (!catalog || !catalogError || /^\/(?:admin|seller|settings|purchases)(?:\/|$)/.test(pathname)) return null;
   return <aside className="container notice catalog-refresh-notice" role="status">
     <p>{lang === "bn" ? "পণ্যের তথ্য আপডেট করা যায়নি। আগের তথ্য দেখানো হচ্ছে। কেনার আগে আবার চেষ্টা করুন।" : "Products could not refresh. Previously loaded details are shown. Try again before buying."}</p>
-    <button type="button" className="button secondary" onClick={() => void reloadCatalog()}>{lang === "bn" ? "আবার চেষ্টা করুন" : "Try again"}</button>
+    <button type="button" className="button secondary" onClick={() => { void reloadCatalog(); if (sessionError) void refreshSession(); }}>{lang === "bn" ? "আবার চেষ্টা করুন" : "Try again"}</button>
   </aside>;
 }
 function ShoppingHelp() {
@@ -1116,7 +1116,7 @@ function Footer() {
 
   if (shop || shopSlug) {
     const slug = shop?.slug || shopSlug!;
-    const shopName = shop?.name || slug;
+    const shopName = shop?.name || slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     const fullAddress = [shop?.contact?.address, shop?.contact?.city_division, shop?.contact?.postal_code]
       .filter(Boolean)
       .join(", ");
@@ -3777,6 +3777,14 @@ function PurchasePage() {
                   Track with courier<ExternalLink size={16} />
                 </a>
               )}
+              {!order.ready && !cancelled && (
+                <div className="notice" style={{ marginTop: "16px", marginBottom: 0 }}>
+                  <Package size={22} />
+                  <p>
+                    {order.delivery_status === "needs_attention" ? "Contact the seller using the support details below." : "Check the delivery status above for updates. This page refreshes automatically."}
+                  </p>
+                </div>
+              )}
             </div>
           )}
           {order.fulfilment_kind !== "physical" && paid && order.ready && !cancelled && (
@@ -3852,7 +3860,7 @@ function PurchasePage() {
               </div>
             </div>
           )}
-          {paid && !order.ready && !cancelled && (
+          {order.fulfilment_kind !== "physical" && paid && !order.ready && !cancelled && (
             <div className="panel purchase-panel purchase-action-panel">
               <div className="notice" style={{ margin: 0 }}>
                 <Package size={22} />
@@ -4795,11 +4803,11 @@ export default function App() {
         </a>
         <ScrollToTop />
         {!adminRoute && <Header />}
-        {!adminRoute && sessionError && (
+        {!adminRoute && sessionError && !(catalog && catalogError && !/^\/(?:admin|seller|settings|purchases)(?:\/|$)/.test(pathname)) && (
           <div className="container">
             <ErrorBox
               message={sessionError}
-              retry={() => void refreshSession()}
+              retry={() => { void refreshSession(); if (catalogError) void reloadCatalog(); }}
             />
           </div>
         )}
