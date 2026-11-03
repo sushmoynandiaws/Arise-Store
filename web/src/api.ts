@@ -11,6 +11,7 @@ export async function api<T>(
   options.signal?.throwIfAborted();
   const response = await fetch(`/api${path}`, {
     credentials: "same-origin",
+    cache: "no-store",
     ...options,
     headers: {
       "Content-Type": "application/json",

@@ -3909,6 +3909,7 @@ function Seller({ settings = false }: { settings?: boolean }) {
     [error, setError] = useState(""),
     [message, setMessage] = useState("");
   const [synced, setSynced] = useState("");
+  const sync = useRef<() => Promise<void>>(async () => {});
   useEffect(() => {
     if (!session?.user) return;
     let current = true;
@@ -3926,52 +3927,26 @@ function Seller({ settings = false }: { settings?: boolean }) {
       current = false;
     };
   }, [session?.user?.id]);
-  const sync = async () => {
-    if (!selected) return;
-    setError("");
-    const result = await api<NonNullable<typeof data>>(
-      `/seller/stores/${selected}/catalog`,
-    );
-    setData(result);
-    setForm({
-      name: result.shop.name,
-      description: result.shop.description,
-      support: result.shop.support,
-      logo_url: result.shop.logo_url,
-      cover_url: result.shop.cover_url,
-      pages: result.shop.pages || {},
-    });
-    setIds(
-      result.products
-        .filter((p) => p.selected && p.sales_enabled)
-        .map((p) => p.id),
-    );
-    setSynced(
-      new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-    );
-  };
   useEffect(() => {
-    let current = true;
-    if (!selected) return;
     setData(null);
     setMessage("");
-    api<NonNullable<typeof data>>(`/seller/stores/${selected}/catalog`)
-      .then((result) => {
-        if (current) {
+    setError("");
+    if (!selected || !session?.user) return;
+    let current = true, initialized = false, revision = 0;
+    const controller = new AbortController();
+    const refresh = async () => {
+      const request = ++revision;
+      try {
+        const result = await api<NonNullable<typeof data>>(`/seller/stores/${selected}/catalog`, {signal: controller.signal});
+        if (current && request === revision) {
           setData(result);
-          setForm({
-            name: result.shop.name,
-            description: result.shop.description,
-            support: result.shop.support,
-            logo_url: result.shop.logo_url,
-            cover_url: result.shop.cover_url,
-            pages: result.shop.pages || {},
-          });
-          setIds(
-            result.products
-              .filter((p) => p.selected && p.sales_enabled)
-              .map((p) => p.id),
-          );
+          setError("");
+          if (!initialized) {
+            setForm({name: result.shop.name, description: result.shop.description, support: result.shop.support,
+              logo_url: result.shop.logo_url, cover_url: result.shop.cover_url, pages: result.shop.pages || {}});
+            setIds(result.products.filter(p => p.selected && p.sales_enabled).map(p => p.id));
+            initialized = true;
+          }
           setSynced(
             new Date().toLocaleTimeString([], {
               hour: "2-digit",
@@ -3979,14 +3954,25 @@ function Seller({ settings = false }: { settings?: boolean }) {
             }),
           );
         }
-      })
-      .catch((e) => {
-        if (current) setError(e.message);
-      });
+      } catch (e) {
+        if (current && request === revision) setError((e as Error).message);
+      }
+    };
+    sync.current = refresh;
+    void refresh();
+    const visibleRefresh = () => { if (!document.hidden) void refresh(); };
+    const interval = window.setInterval(visibleRefresh, 30000);
+    window.addEventListener("focus", visibleRefresh);
+    document.addEventListener("visibilitychange", visibleRefresh);
     return () => {
       current = false;
+      controller.abort();
+      clearInterval(interval);
+      window.removeEventListener("focus", visibleRefresh);
+      document.removeEventListener("visibilitychange", visibleRefresh);
+      sync.current = async () => {};
     };
-  }, [selected]);
+  }, [selected, session?.user?.id, session?.csrf]);
   async function save(published: boolean) {
     if (busy) return;
     setBusy(true);
@@ -4135,7 +4121,7 @@ function Seller({ settings = false }: { settings?: boolean }) {
                   Choose your AriseSell shop
                   <select
                     value={selected}
-                    onChange={(e) => setSelected(e.target.value)}
+                    onChange={(e) => {setData(null); setSelected(e.target.value);}}
                   >
                     {shops.map((shop) => (
                       <option key={shop.id} value={shop.id}>
@@ -4148,7 +4134,7 @@ function Seller({ settings = false }: { settings?: boolean }) {
               {error && (
                 <ErrorBox
                   message={error}
-                  retry={() => void sync().catch((e) => setError(e.message))}
+                  retry={() => void sync.current()}
                 />
               )}
               <div role="status">
@@ -4439,9 +4425,7 @@ function Seller({ settings = false }: { settings?: boolean }) {
                           type="button"
                           className="text-link"
                           disabled={busy}
-                          onClick={() =>
-                            void sync().catch((e) => setError(e.message))
-                          }
+                          onClick={() => { void sync.current(); void reloadCatalog(); }}
                         >
                           Refresh from AriseSell
                         </button>
@@ -4732,6 +4716,7 @@ export default function App() {
   const catalogRevision = useRef(0);
   const sessionRevision = useRef(0);
   const purchaseKey = JSON.stringify([pathname, session?.user?.id, session?.csrf]);
+  const sellerKey = JSON.stringify([session?.user?.id, session?.csrf]);
   const reloadCatalog = async () => {
     const revision = ++catalogRevision.current;
     try {
@@ -4834,8 +4819,8 @@ export default function App() {
           <Route path="/checkout/:id" element={<Checkout />} />
           <Route path="/purchases" element={<Purchases key={purchaseKey} />} />
           <Route path="/purchases/:id" element={<PurchasePage key={purchaseKey} />} />
-          <Route path="/seller" element={<Seller />} />
-          <Route path="/settings" element={<Seller settings />} />
+          <Route path="/seller" element={<Seller key={sellerKey} />} />
+          <Route path="/settings" element={<Seller key={sellerKey} settings />} />
           <Route path="/admin/*" element={<AdminEntry />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="*" element={<NotFound />} />

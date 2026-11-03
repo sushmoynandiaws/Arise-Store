@@ -10,6 +10,14 @@ function client(fetch=async()=>({ok:true,json:async()=>({ok:true})}), clock=Date
   vm.runInNewContext(code,{exports,fetch,Intl,Number,Date:clock});return exports;
 }
 
+test("catalog reads always request fresh source prices instead of a browser cache", async()=>{
+  const calls=[];
+  const {api}=client(async (path, options)=>{calls.push({path,options});return {ok:true,json:async()=>({})};});
+  await api("/catalog");
+  await api("/seller/stores/one/catalog");
+  assert.ok(calls.every(call=>call.options.cache==="no-store" && call.options.credentials==="same-origin"));
+});
+
 test("craft prices use exact source package proportions, per-set rounding and option charges",()=>{
   const {craftPrice} = client();
   for (const [price,pieces,packagePieces,quantity,extras,unit,total] of [
