@@ -4,7 +4,7 @@ const shop = {id:"art-shop", slug:"art-shop",name:"Art shop",kind:"Art & Crafts"
 const product = {id:"canvas",shop_id:shop.id,name:"Custom canvas",category:"Art",description:"Personal canvas",image_url:"",currency:"BDT",
   fulfilment_kind:"physical",delivery_mode:"shipping",required_buyer_fields:["name","phone","address","district"],payment_methods:["cod"],sales_enabled:true,checkout_available:true,
   variants:[{id:"small",name:"Small canvas",price:"600",stock:4}],custom_order:{revision:"a".repeat(64),fields:[{id:"printed",label:"Printed name",question:"Which name should be printed?",type:"text",required:true,options:[]}],
-    craft:{enabled:true,allow_mixing:false,allow_artwork:true,proof_required:true,designs:[{code:"D1",label:"Floral"}]}}};
+    craft:{enabled:true,allow_mixing:false,allow_artwork:true,proof_required:true,designs:[{code:"D1",label:"Floral"},{code:"D2",label:"Geometric"}]}}};
 
 test("mobile custom selection waits for seller proof, approves it and passes source draft to checkout", async ({page}) => {
   let approved = false, saved: any, quote: any;
@@ -25,7 +25,10 @@ test("mobile custom selection waits for seller proof, approves it and passes sou
   });
   await page.setViewportSize({width:375,height:812});
   await page.goto("/checkout/canvas?variant=small&quantity=1");
+  await expect(page.getByRole("button", {name:"Select all",exact:true})).toHaveCount(0);
+  await page.getByRole("button", {name:"Geometric",exact:true}).click();
   await page.getByRole("button", {name:"Floral",exact:true}).click();
+  await expect(page.getByRole("button", {name:"Geometric",exact:true})).toHaveAttribute("aria-pressed","false");
   await page.getByLabel("Printed name").fill("Exact spelling");
   await page.getByRole("checkbox").check();
   await page.getByRole("button",{name:"Submit selection",exact:true}).click();
@@ -46,7 +49,7 @@ test("mobile custom selection waits for seller proof, approves it and passes sou
   await page.screenshot({path:"../artifacts/craft-checkout-mobile.png",fullPage:true});
 });
 
-test("gallery picture choices respect package counts, copies and changed packages", async ({page}) => {
+test("gallery allows multiple designs and select all beyond a one-piece package, pending seller review", async ({page}) => {
   let saved: any;
   const image = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='160'%3E%3Crect width='120' height='160' fill='%236336d6'/%3E%3C/svg%3E";
   const gallery = {...product, variants: [
@@ -70,19 +73,22 @@ test("gallery picture choices respect package counts, copies and changed package
   });
   await page.setViewportSize({width:375,height:812});
   await page.goto("/checkout/canvas?variant=triple&quantity=2");
-  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 0 \/ 3/);
+  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 0.*Package includes 3/);
   await expect(page.getByText("Messenger_creation",{exact:false})).toHaveCount(0);
   await expect(page.getByRole("button",{name:"Design 3",exact:true})).toBeVisible();
   await page.getByRole("button",{name:"Messi 10",exact:true}).click();
   await page.getByRole("button",{name:"Increase Messi 10",exact:true}).click();
   await page.getByRole("button",{name:"Neymar 11",exact:true}).click();
-  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 3 \/ 3/);
+  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 3.*Package includes 3/);
   await page.getByRole("checkbox").check();
-  await expect(page.getByRole("button",{name:"Design 3",exact:true})).toBeDisabled();
+  await expect(page.getByRole("button",{name:"Design 3",exact:true})).toBeEnabled();
   await page.getByLabel("Package",{exact:true}).selectOption("single");
   await expect(page.getByRole("checkbox")).not.toBeChecked();
   await expect(page.getByRole("button",{name:"Submit selection",exact:true})).toBeDisabled();
-  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 3 \/ 1/);
+  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 3.*Package includes 1/);
+  await expect(page.getByText(/The seller must confirm the package and final price/)).toBeVisible();
+  await page.getByRole("checkbox").check();
+  await expect(page.getByRole("button",{name:"Submit selection",exact:true})).toBeEnabled();
   await page.getByLabel("Package",{exact:true}).selectOption("triple");
   await page.getByRole("checkbox").check();
   await page.getByRole("button",{name:"Submit selection",exact:true}).click();
@@ -92,10 +98,31 @@ test("gallery picture choices respect package counts, copies and changed package
   expect(saved.config_revision).toBe(gallery.custom_order.revision);
   expect(saved).not.toHaveProperty("price");
   await page.getByRole("button",{name:"Change selection",exact:true}).click();
-  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 3 \/ 3/);
+  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 3.*Package includes 3/);
   await page.getByRole("button",{name:"Neymar 11",exact:true}).click();
   await page.getByRole("button",{name:"Design 3",exact:true}).click();
   await expect(page.getByRole("button",{name:"Design 3",exact:true})).toHaveAttribute("aria-pressed","true");
+  await page.getByLabel("Package",{exact:true}).selectOption("single");
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button",{name:"Select all",exact:true}).click();
+  await expect(page.getByRole("checkbox")).not.toBeChecked();
+  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 12.*Package includes 1/);
+  await expect(page.locator('.craft-design-choice[aria-pressed="true"]')).toHaveCount(11);
+  await expect(page.getByLabel("Messi 10 quantity",{exact:true})).toHaveText("2");
+  await expect(page.getByRole("button",{name:"Select all",exact:true})).toBeDisabled();
+  await page.getByRole("button",{name:"Clear designs",exact:true}).click();
+  await expect(page.locator('.craft-design-choice[aria-pressed="true"]')).toHaveCount(0);
+  await page.getByRole("checkbox").check();
+  await expect(page.getByRole("button",{name:"Submit selection",exact:true})).toBeDisabled();
+  await page.getByRole("button",{name:"Select all",exact:true}).click();
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button",{name:"Submit selection",exact:true}).click();
+  await expect(page.getByRole("heading",{name:"Seller review and preview"})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Review order",exact:true})).toHaveCount(0);
+  expect(saved.variant_id).toBe("single");
+  expect(saved.selection).toEqual(gallery.custom_order.craft.designs.map(design => ({code:design.code,qty:1})));
+  expect(saved).not.toHaveProperty("price");
+  await page.getByRole("button",{name:"Change selection",exact:true}).click();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();
   await page.evaluate(() => window.scrollTo(0,0));
   await page.screenshot({path:"../artifacts/craft-picker-mobile.png",fullPage:true});
@@ -129,7 +156,7 @@ test("reloaded selection restores exact designs, answers and retained media befo
   await page.getByRole("button",{name:"Change selection",exact:true}).click();
   await expect(page.getByRole("button",{name:"Floral",exact:true})).toHaveAttribute("aria-pressed","true");
   await expect(page.getByLabel("Printed name")).toHaveValue("Keep exact spelling");
-  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 2 \/ 2/);
+  await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 2.*Package includes 2/);
   await expect(page.getByText("Your saved image is kept. A new upload replaces it.")).toBeVisible();
   await expect(page.getByText("Your saved artwork is kept. A new upload replaces it.")).toBeVisible();
   await page.getByRole("button",{name:"Remove saved artwork",exact:true}).click();
