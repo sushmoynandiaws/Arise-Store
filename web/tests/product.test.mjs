@@ -6,6 +6,13 @@ import ts from 'typescript';
 const exports={};
 vm.runInNewContext(ts.transpileModule(fs.readFileSync(new URL('../src/product.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,{exports,encodeURIComponent});
 const {productPath,productSlug,productForRoute,productSection,productSections}=exports;
+const {designName}=exports;
+test('design fallback labels hide generated upload names without changing seller titles',()=>{
+  assert.equal(designName('Messenger_creation_84853978-C513-45FF-ACBE-BAFB0A6DFF83',2),'Design 3');
+  assert.equal(designName('IMG_20261103_142200',0,true),'ডিজাইন 1');
+  assert.equal(designName('Messi 10',0),'Messi 10');
+  assert.equal(designName('FC Barcelona Crest',11),'FC Barcelona Crest');
+});
 const p={id:'34a419e0-8596-4910-ac03-7cb9ba04773f',shop_id:'a',name:'ChatGPT Plus No Warranty (UPI)'};
 const shop={id:'a',slug:'nandi-digital-products'};
 const catalog={shops:[shop,{id:'b',slug:'another-shop'}],products:[p]};

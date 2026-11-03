@@ -4035,7 +4035,26 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
 .craft-checkout { max-width: 820px; }
 .craft-checkout .panel { display: grid; gap: 20px; }
 .craft-checkout fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-.craft-design { width: 120px; height: 120px; object-fit: contain; }
+.craft-selection-count { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; padding-bottom: 8px; color: var(--primary); }
+.craft-selection-count span, .craft-picker-hint { color: var(--muted); font-size: var(--text-small); }
+.craft-picker-hint { margin: 4px 0 14px; }
+.craft-design-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.craft-design-card { min-width: 0; border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.craft-design-card.is-selected { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); background: var(--primary-light); }
+.craft-design-choice { position: relative; display: flex; flex-direction: column; align-items: stretch; width: 100%; min-height: 44px; padding: 10px; gap: 10px; border: 0; background: transparent; color: var(--ink); text-align: left; cursor: pointer; }
+.craft-design-choice img, .craft-design-placeholder { display: block; width: 100%; height: 144px; object-fit: contain; border-radius: 8px; background: var(--surface-ground); }
+.craft-design-placeholder { display: grid; place-items: center; }
+.craft-design-label { display: block; padding-right: 26px; font-size: var(--text-label); font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+.craft-design-check { position: absolute; right: 10px; bottom: 10px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--surface); color: var(--muted); }
+.is-selected .craft-design-check { background: var(--primary); border-color: var(--primary); color: white; }
+.craft-design-choice:focus-visible, .craft-design-quantity button:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
+.craft-design-choice:disabled { cursor: default; opacity: .55; }
+.craft-design-quantity { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--line); }
+.craft-design-quantity button { width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--primary); cursor: pointer; font-size: 20px; }
+.craft-design-quantity button:disabled { opacity: .4; cursor: default; }
+.craft-design-quantity output { min-width: 30px; text-align: center; font-size: 16px; font-variant-numeric: tabular-nums; }
+.craft-retained-image { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted); font-size: var(--text-small); }
+@media (max-width: 600px) { .craft-design-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .craft-design-choice img, .craft-design-placeholder { height: 116px; } .craft-checkout .craft-picker { padding: 12px; } }
 .craft-proof { width: 100%; max-height: 480px; object-fit: contain; }
 .craft-checkout-status { padding-top: 20px; }
 

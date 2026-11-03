@@ -2716,9 +2716,9 @@ function ProductPage() {
 }
 function Checkout() {
   const {id} = useParams();
-  const {catalog} = useMarket();
+  const {catalog,session} = useMarket();
   const product = catalog?.products.find(p => p.id === id);
-  return product?.custom_order && product.checkout_available !== false ? <Suspense fallback={<Loading />}><CraftCheckout key={product.id} product={product}><CheckoutDetails /></CraftCheckout></Suspense> : <CheckoutDetails />;
+  return product?.custom_order && product.checkout_available !== false ? <Suspense fallback={<Loading />}><CraftCheckout key={`${product.id}:${session?.user?.id || "guest"}:${session?.csrf || ""}`} product={product}><CheckoutDetails /></CraftCheckout></Suspense> : <CheckoutDetails />;
 }
 function CheckoutDetails() {
   const { id } = useParams();

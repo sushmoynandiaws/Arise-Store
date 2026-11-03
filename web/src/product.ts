@@ -39,3 +39,8 @@ export function productForRoute(catalog: Catalog, route: { id?: string; slug?: s
   return shop && catalog.products.find((product) => product.shop_id === shop.id &&
     productSlug(product, catalog.products) === route.productSlug);
 }
+export function designName(label: string, index: number, bangla = false): string {
+  const value = label.trim();
+  const generated = /^(?:messenger[_ -]creation|whatsapp[ _-]image|img[_ -]?\d|dsc[_-]?\d|screenshot[_ -]?\d|[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12})/i.test(value);
+  return !value || generated ? `${bangla ? "ডিজাইন" : "Design"} ${index + 1}` : value;
+}
