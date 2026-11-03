@@ -8,6 +8,11 @@ Physical checkout requests the source-required delivery address, district, phone
 
 ## Voice
 
+Confirmed catalog-only gallery choices continue to checkout using source-calculated
+per-piece prices; a different piece count alone does not need seller review.
+Customer artwork, image answers and required print previews still use the source's
+review and approval guards. Existing held selections can refresh to checkout.
+
 - Name the task or current state in the heading. Explain the next step in one or two short sentences.
 - Use sentence case. Omit final periods in short headings, labels and buttons; use punctuation in explanatory sentences.
 - Keep transactional copy calm and factual. Reserve promotional language for the homepage, where it must still explain the marketplace.

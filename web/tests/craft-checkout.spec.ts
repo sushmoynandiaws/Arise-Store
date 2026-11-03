@@ -50,7 +50,7 @@ test("mobile custom selection waits for seller proof, approves it and passes sou
   await page.screenshot({path:"../artifacts/craft-checkout-mobile.png",fullPage:true});
 });
 
-test("gallery allows multiple designs and select all beyond a one-piece package, pending seller review", async ({page}) => {
+test("gallery allows multiple designs and select all beyond a one-piece package while a required preview is pending", async ({page}) => {
   let saved: any;
   const image = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='160'%3E%3Crect width='120' height='160' fill='%236336d6'/%3E%3C/svg%3E";
   const gallery = {...product, variants: [
