@@ -40,31 +40,31 @@ export function CourierStatus({ order }: { order: Purchase }) {
       {tracking ? (
         <>
           <p>
-            {tracking.provider} · Tracking number: {tracking.tracking}
+            {tracking.provider} · {lang === "bn" ? "ট্র্যাকিং নম্বর:" : "Tracking number:"} {tracking.tracking}
           </p>
           {tracking.updated_at && (
             <small>
-              Last source update:{" "}
-              {new Date(tracking.updated_at).toLocaleString()}
+              {lang === "bn" ? "সর্বশেষ আপডেট:" : "Last source update:"}{" "}
+              {new Date(tracking.updated_at).toLocaleString(lang === "bn" ? "bn-BD" : undefined)}
             </small>
           )}
           {tracking.poll_delayed && (
             <p role="status">
-              Courier sync is delayed. Showing the last confirmed status.
+              {lang === "bn" ? "কুরিয়ার সিঙ্ক হতে কিছুটা বিলম্ব হচ্ছে। সর্বশেষ নিশ্চিত স্ট্যাটাস দেখানো হচ্ছে।" : "Courier sync is delayed. Showing the last confirmed status."}
             </p>
           )}
         </>
       ) : (
-        <p>Tracking appears after the seller books a courier.</p>
+        <p>{lang === "bn" ? "বিক্রেতা কুরিয়ার বুক করার পর ট্র্যাকিং তথ্য দেখা যাবে।" : "Tracking appears after the seller books a courier."}</p>
       )}
       <small>
-        Courier updates are synced by AriseSell. Provider updates can take time
-        to appear.
+        {lang === "bn" ? "কুরিয়ার আপডেট AriseSell থেকে সিঙ্ক হয়। প্রোভাইডার আপডেট আসতে কিছুটা সময় লাগতে পারে।" : "Courier updates are synced by AriseSell. Provider updates can take time to appear."}
       </small>
     </div>
   );
 }
 export function LiveTracking({ ready }: { ready: boolean }) {
+  const { lang } = useLang();
   const [orders, setOrders] = useState<Purchase[]>([]),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -93,24 +93,27 @@ export function LiveTracking({ ready }: { ready: boolean }) {
   return (
     <section className="panel live-tracking">
       <div className="section-heading">
-        <h2>Courier tracking</h2>
+        <h2>{lang === "bn" ? "কুরিয়ার ট্র্যাকিং" : "Courier tracking"}</h2>
         <button
           type="button"
           className="button secondary"
           onClick={() => void load()}
           disabled={busy || !ready}
         >
-          {busy ? "Refreshing…" : "Refresh status"}
+          {busy ? (lang === "bn" ? "রিফ্রেশ হচ্ছে…" : "Refreshing…") : (lang === "bn" ? "স্ট্যাটাস রিফ্রেশ করুন" : "Refresh status")}
         </button>
       </div>
       <p>
-        Physical orders linked to this browser or signed-in account appear here.
+        {lang === "bn"
+          ? "এই ব্রাউজার বা সাইন-ইন করা অ্যাকাউন্টের সাথে যুক্ত ফিজিক্যাল অর্ডারগুলো এখানে দেখা যাবে।"
+          : "Physical orders linked to this browser or signed-in account appear here."}
       </p>
       {error && <p role="alert">{error}</p>}
       {!orders.length && !busy && (
         <p>
-          No physical orders are linked yet. Open your purchase in the browser
-          you ordered from, or sign in with the account used at checkout.
+          {lang === "bn"
+            ? "এখনও কোনো ফিজিক্যাল অর্ডার যুক্ত নেই। যে ব্রাউজার থেকে অর্ডার করেছিলেন সেটি খুলুন অথবা চেকআউটে ব্যবহৃত অ্যাকাউন্টে সাইন ইন করুন।"
+            : "No physical orders are linked yet. Open your purchase in the browser you ordered from, or sign in with the account used at checkout."}
         </p>
       )}
       {orders.map((order) => (
@@ -379,7 +382,7 @@ export function CartProvider({
                   </span>
                   <div className="bag-line-actions">
                     <label>
-                      Quantity
+                      {lang === "bn" ? "পরিমাণ" : "Quantity"}
                       <input
                         aria-label={`Quantity for ${row.product?.name || row.variant_id}`}
                         type="number"
@@ -414,20 +417,21 @@ export function CartProvider({
                         )
                       }
                     >
-                      Remove
+                      {lang === "bn" ? "সরান" : "Remove"}
                     </button>
                   </div>
                 </li>
               ))}
             </ul>
             <div className="review-row">
-              <span>Products subtotal</span>
+              <span>{lang === "bn" ? "পণ্যের সাবটোটাল" : "Products subtotal"}</span>
               <strong>{money(subtotal.toFixed(2), first?.currency)}</strong>
             </div>
             {!valid && (
               <p role="status">
-                Some items, stock or payment methods changed. Update your bag
-                before checkout.
+                {lang === "bn"
+                  ? "কিছু পণ্য, স্টক বা পেমেন্ট মাধ্যম পরিবর্তিত হয়েছে। চেকআউটের আগে আপনার ব্যাগ আপডেট করুন।"
+                  : "Some items, stock or payment methods changed. Update your bag before checkout."}
               </p>
             )}
             {valid && first ? (
@@ -436,11 +440,11 @@ export function CartProvider({
                 onClick={() => setShown(false)}
                 to={`/checkout/${first.id}?variant=${rows[0].variant_id}&cart=1`}
               >
-                Checkout together
+                {lang === "bn" ? "একসাথে চেকআউট করুন" : "Checkout together"}
               </Link>
             ) : (
               <button className="button primary full-width" disabled>
-                Checkout unavailable
+                {lang === "bn" ? "চেকআউট অনুপলব্ধ" : "Checkout unavailable"}
               </button>
             )}
             <button
@@ -451,7 +455,7 @@ export function CartProvider({
                 setError("");
               }}
             >
-              Empty bag
+              {lang === "bn" ? "ব্যাগ খালি করুন" : "Empty bag"}
             </button>
           </>
         )}
@@ -744,19 +748,19 @@ export function ProductQuestions({ productId }: { productId: string }) {
             <strong>{item.display_name}:</strong> {item.question}
           </p>
           <p className="preserve-lines">
-            <strong>Seller:</strong> {item.answer}
+            <strong>{lang === "bn" ? "বিক্রেতা:" : "Seller:"}</strong> {item.answer}
           </p>
-          <time>{new Date(item.answered_at * 1000).toLocaleDateString()}</time>
+          <time>{new Date(item.answered_at * 1000).toLocaleDateString(lang === "bn" ? "bn-BD" : undefined)}</time>
         </article>
       ))}
-      {!items.length && <p>No published answers yet.</p>}
+      {!items.length && <p>{lang === "bn" ? "এখনও কোনো প্রকাশিত উত্তর নেই।" : "No published answers yet."}</p>}
       {more && (
         <button
           type="button"
           className="button secondary"
           onClick={() => void load(items.length)}
         >
-          More answers
+          {lang === "bn" ? "আরও উত্তর দেখুন" : "More answers"}
         </button>
       )}
       {message ? (
@@ -794,11 +798,11 @@ export function ProductQuestions({ productId }: { productId: string }) {
               : "Your name, question and seller’s answer become public after a reply. Keep contact details, passwords and payment information private."}
           </p>
           <label className="field">
-            Public name
+            {lang === "bn" ? "আপনার নাম (পাবলিক)" : "Public name"}
             <input name="display_name" required minLength={2} maxLength={60} />
           </label>
           <label className="field">
-            Question
+            {lang === "bn" ? "আপনার প্রশ্ন" : "Question"}
             <textarea
               name="question"
               required
@@ -808,7 +812,7 @@ export function ProductQuestions({ productId }: { productId: string }) {
             />
           </label>
           <button className="button secondary" disabled={busy}>
-            {busy ? "Sending…" : "Send question"}
+            {busy ? (lang === "bn" ? "পাঠানো হচ্ছে…" : "Sending…") : (lang === "bn" ? "প্রশ্ন পাঠান" : "Send question")}
           </button>
         </form>
       )}
@@ -820,7 +824,7 @@ export function ProductQuestions({ productId }: { productId: string }) {
             className="text-link"
             onClick={() => void load()}
           >
-            Retry
+            {lang === "bn" ? "আবার চেষ্টা করুন" : "Retry"}
           </button>
         </p>
       )}

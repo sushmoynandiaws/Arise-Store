@@ -4294,3 +4294,6 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
 
 .catalog-refresh-notice { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
 .catalog-refresh-notice p { flex: 1 1 260px; margin: 0; font-size: var(--text-body); }
+.purchase-status-filters { margin-block: 16px 20px; }
+.bag-line-actions .text-link { display: inline-flex; align-items: center; min-height: 44px; padding-inline: 8px; }
+.sticky-ad-close-btn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }

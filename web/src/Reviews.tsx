@@ -41,8 +41,8 @@ export function ProductReviews({ productId }: { productId: string }) {
     finally { setBusy(false); }
   }
   return <div className="product-reviews">
-    {error && <div role="alert" className="notice error"><p>{error}</p><button type="button" className="button secondary small" disabled={busy} onClick={() => void load()}>Retry reviews</button></div>}
-    {!data && !error && <p role="status">Loading reviews…</p>}
+    {error && <div role="alert" className="notice error"><p>{error}</p><button type="button" className="button secondary small" disabled={busy} onClick={() => void load()}>{lang === "bn" ? "পুনরায় চেষ্টা করুন" : "Retry reviews"}</button></div>}
+    {!data && !error && <p role="status">{lang === "bn" ? "রিভিউ লোড হচ্ছে…" : "Loading reviews…"}</p>}
     {data && <>
       <div className="review-summary">
         {data.count > 0 && data.average !== null ? <><strong>{data.average.toFixed(1)}<small> / 5</small></strong><span>{data.count} {data.count === 1 ? (lang === "bn" ? "টি রিভিউ" : "review") : (lang === "bn" ? "টি রিভিউ" : "reviews")}<small>{lang === "bn" ? "ভেরিফাইড বায়ারদের রিভিউ" : "From verified purchases"}</small></span></> : <p>{lang === "bn" ? "এখনও কোনো রিভিউ নেই।" : "No reviews yet."}</p>}
@@ -80,7 +80,7 @@ export function PurchaseReview({ order }: { order: Purchase }) {
       </fieldset>
       <label className="field">{lang === "bn" ? "আপনার নাম (পাবলিক)" : "Your public name"}<input required minLength={2} maxLength={60} value={name} onChange={event => setName(event.target.value)} /></label>
       <label className="field">{lang === "bn" ? "আপনার রিভিউ" : "Your review"}<textarea required minLength={10} maxLength={2000} rows={4} value={comment} onChange={event => setComment(event.target.value)} placeholder={lang === "bn" ? "প্রোডাক্ট এবং আপনার অভিজ্ঞতা কেমন ছিল তা লিখুন..." : "Tell others about the product and your experience."} /></label>
-      <p className="review-guidance">Your public name, rating, review and review date appear on the product page. Keep passwords, license keys and payment details private.</p>
+      <p className="review-guidance">{lang === "bn" ? "আপনার পাবলিক নাম, রেটিং, রিভিউ এবং তারিখ প্রোডাক্ট পেজে প্রকাশিত হবে। পাসওয়ার্ড, লাইসেন্স কী এবং পেমেন্ট তথ্য গোপন রাখুন।" : "Your public name, rating, review and review date appear on the product page. Keep passwords, license keys and payment details private."}</p>
       {error && <p role="alert" className="notice error">{error}</p>}
       <button className="button primary" disabled={busy || !order.can_review}>{busy ? (lang === "bn" ? "সংরক্ষণ করা হচ্ছে…" : "Saving review…") : review ? (lang === "bn" ? "রিভিউ আপডেট করুন" : "Update review") : (lang === "bn" ? "রিভিউ প্রকাশ করুন" : "Publish review")}</button>
       {review && <button type="button" className="button ghost" onClick={() => setEditing(false)}>{lang === "bn" ? "বাতিল" : "Cancel"}</button>}

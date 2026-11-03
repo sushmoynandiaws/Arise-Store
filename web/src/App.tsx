@@ -160,13 +160,14 @@ function bootstrap() {
   return (boot ??= api<Session>("/session"));
 }
 function ErrorBox({ message, retry }: { message: string; retry?: () => void }) {
+  const { lang } = useLang();
   return (
     <div role="alert" className="notice error">
       <p>{message}</p>
       {retry && (
         <button className="button small secondary" onClick={retry}>
           <RefreshCw size={15} />
-          Try again
+          {lang === "bn" ? "আবার চেষ্টা করুন" : "Try again"}
         </button>
       )}
     </div>
@@ -281,7 +282,10 @@ export function WishlistModal({
             </div>
           ) : (
             <div className="wishlist-items-grid">
-              {items.map((prod) => (
+              {items.map((prod) => {
+                const itemShop = catalog?.shops.find((s) => s.id === prod.shop_id);
+                const available = prod.sales_enabled && stock(prod) !== 0;
+                return (
                 <div key={prod.id} className="wishlist-item-row">
                   <div className="wishlist-item-art">
                     <Art product={prod} />
@@ -290,11 +294,12 @@ export function WishlistModal({
                     <Link to={productPath(prod, catalog!)} onClick={onClose} className="wishlist-item-title">
                       {prod.name}
                     </Link>
+                    {itemShop && <small className="muted" style={{ display: "block", fontSize: "var(--text-small)" }}>{itemShop.name}</small>}
                     <span className="price">{money(minimumPrice(prod), prod.currency)}</span>
                   </div>
                   <div className="wishlist-item-actions">
-                    <Link to={productPath(prod, catalog!)} onClick={onClose} className="button primary small">
-                      {lang === "bn" ? "কিনুন" : "Buy"}
+                    <Link to={productPath(prod, catalog!)} onClick={onClose} className={`button ${available ? "primary" : "secondary"} small`}>
+                      {available ? (lang === "bn" ? "কিনুন" : "Buy") : (lang === "bn" ? "দেখুন" : "View")}
                     </Link>
                     <button
                       type="button"
@@ -307,7 +312,8 @@ export function WishlistModal({
                     </button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -768,7 +774,7 @@ function Header() {
           </Link>
           {!shop && (
             <Link className="button primary seller-nav" to="/seller">
-              {session?.user ? "My shop" : t("openShop")}
+              {session?.user ? (lang === "bn" ? "আমার শপ" : "My shop") : t("openShop")}
             </Link>
           )}
           <button
@@ -846,7 +852,7 @@ function Header() {
       {session?.demo && (
         <div className="demo-bar">
           <span className="status-dot" />
-          Development preview · Sample shops & products. No real payments.
+          {lang === "bn" ? "ডেভেলপমেন্ট প্রিভিউ · নমুনা শপ ও পণ্য। কোনো প্রকৃত পেমেন্ট নেই।" : "Development preview · Sample shops & products. No real payments."}
         </div>
       )}
       {session?.user && (
@@ -854,7 +860,7 @@ function Header() {
           <span>{lang === "bn" ? "সাইন ইন করেছেন:" : "Signed in as"} {session.user.name}</span>
           <div>
             <Link to="/settings" aria-current={location.pathname === "/settings" ? "page" : undefined}><SlidersHorizontal size={16} />{lang === "bn" ? "সেটিংস" : "Settings"}</Link>
-            {session.user.admin && <Link to="/admin">Marketplace admin</Link>}
+            {session.user.admin && <Link to="/admin">{lang === "bn" ? "মার্কেটপ্লেস অ্যাডমিন" : "Marketplace admin"}</Link>}
             <button
               onClick={async () => {
                 try {
@@ -865,7 +871,7 @@ function Header() {
               }}
             >
               <LogOut size={13} />
-              Sign out
+              {lang === "bn" ? "সাইন আউট" : "Sign out"}
             </button>
           </div>
         </div>
@@ -1030,7 +1036,7 @@ function ShopContactContent({ shop, lang, support }: { shop: Shop; lang: "bn" | 
         </div>
       )}
 
-      {support && (
+      {support && !waNumber && !emailAddr && !phoneNum && (
         <div className="shop-policy-support">
           <a className="button secondary" href={supportHref(support)}>
             <Phone size={16} aria-hidden="true" />
@@ -1772,6 +1778,7 @@ function ShopAvatar({ shop }: { shop: Shop }) {
   );
 }
 function ShopCard({ shop, heading: Heading = "h3" }: { shop: Shop; heading?: "h2" | "h3" }) {
+  const { lang } = useLang();
   const count =
     useMarket().catalog?.products.filter((p) => p.shop_id === shop.id).length ||
     0;
@@ -1782,7 +1789,7 @@ function ShopCard({ shop, heading: Heading = "h3" }: { shop: Shop; heading?: "h2
         <Heading>{shop.name}</Heading><ShopBadge shop={shop}/>
         <small>{shopType(shop)}</small>
         <p>
-          {count} {count === 1 ? "product" : "products"}
+          {count} {lang === "bn" ? "টি প্রোডাক্ট" : count === 1 ? "product" : "products"}
         </p>
       </div>
     </Link>
@@ -1851,7 +1858,8 @@ function Home() {
               className="hero-search"
               onSubmit={(e) => {
                 e.preventDefault();
-                navigate(`/products?q=${encodeURIComponent(query)}`);
+                const trimmed = query.trim();
+                navigate(trimmed ? `/products?q=${encodeURIComponent(trimmed)}` : "/products");
               }}
             >
               <Search size={21} />
@@ -1913,7 +1921,7 @@ function Home() {
             </div>
           ) : catalog ? (
             <p className="muted">
-              Categories will appear as sellers publish their first products.
+              {lang === "bn" ? "বিক্রেতারা পণ্য প্রকাশ করলে ক্যাটাগরিগুলো এখানে দেখা যাবে।" : "Categories will appear as sellers publish their first products."}
             </p>
           ) : null}
         </section>
@@ -1938,12 +1946,14 @@ function Home() {
               ))}
             </div>
           ) : (
-            <Empty title="No products yet">
+            <Empty title={lang === "bn" ? "এখনও কোনো প্রোডাক্ট নেই" : "No products yet"}>
               <p>
-                Products appear here when shops publish them. Browse the shops or return later.
+                {lang === "bn"
+                  ? "শপগুলো পণ্য প্রকাশ করলে এখানে দেখা যাবে। শপগুলো ব্রাউজ করুন অথবা পরে আবার দেখুন।"
+                  : "Products appear here when shops publish them. Browse the shops or return later."}
               </p>
               <Link className="button primary" to="/shops">
-                Browse shops
+                {lang === "bn" ? "শপ ব্রাউজ করুন" : "Browse shops"}
                 <ArrowRight size={17} />
               </Link>
             </Empty>
@@ -2091,16 +2101,24 @@ function Products({ shop }: { shop?: Shop }) {
         </div>
       </div>
 
-      {query && (
+      {(query || storeType) && (
         <div className="active-filter-banner">
           <span>
-            {lang === "bn" ? `খোঁজা হচ্ছে: "${query}"` : `Showing results for: "${query}"`}
+            {query
+              ? (lang === "bn" ? `খোঁজা হচ্ছে: "${query}"` : `Showing results for: "${query}"`)
+              : (lang === "bn" ? `শপের ধরন: "${storeType}"` : `Shop category: "${storeType}"`)}
             <span className="active-count"> ({products.length} {products.length === 1 ? (lang === "bn" ? "টি প্রোডাক্ট পাওয়া গেছে" : "product found") : (lang === "bn" ? "টি প্রোডাক্ট পাওয়া গেছে" : "products found")})</span>
           </span>
           <button
             type="button"
             className="clear-search-pill"
-            onClick={() => update("q", "")}
+            onClick={() => {
+              const next = new URLSearchParams(params);
+              next.delete("q");
+              next.delete("search");
+              next.delete("store_type");
+              setParams(next, { replace: true });
+            }}
           >
             <X size={14} />
             <span>{lang === "bn" ? "মুছুন" : "Clear"}</span>
@@ -2109,7 +2127,7 @@ function Products({ shop }: { shop?: Shop }) {
       )}
       <p className="results-count" role="status">
         {products.length} {products.length === 1 ? (lang === "bn" ? "টি প্রোডাক্ট" : "product") : (lang === "bn" ? "টি প্রোডাক্ট" : "products")}
-        {query && <> {lang === "bn" ? `খোঁজা হচ্ছে: “${query}”` : `for “${query}”`}</>}
+        {category && <> · {category}</>}
       </p>
       {catalogError && !catalog ? (
         <ErrorBox message={catalogError} retry={() => void reloadCatalog()} />
@@ -2236,7 +2254,7 @@ function Shops() {
                 <i />
               </div>
               <ShopCard shop={shop} heading="h2" />
-              <p>{shop.description}</p>
+              <p>{shop.description || (lang === "bn" ? `${shop.name}-এর প্রকাশিত পণ্যগুলো দেখুন।` : `Browse published products from ${shop.name}.`)}</p>
               <Link className="text-link" to={`/shops/${shop.slug}`}>
                 {lang === "bn" ? "শপে যান" : "Visit shop"}
                 <ArrowRight size={16} />
@@ -2245,9 +2263,9 @@ function Shops() {
           ))}
         </div>
       ) : (
-        <Empty title="No shops found">
-          <p>Try another shop name or browse all products.</p>
-          <Link className="button secondary" to="/products">Browse products</Link>
+        <Empty title={lang === "bn" ? "কোনো শপ পাওয়া যায়নি" : "No shops found"}>
+          <p>{lang === "bn" ? "অন্য কোনো শপের নাম দিয়ে খুঁজুন অথবা সব প্রোডাক্ট ব্রাউজ করুন।" : "Try another shop name or browse all products."}</p>
+          <Link className="button secondary" to="/products">{lang === "bn" ? "প্রোডাক্ট ব্রাউজ করুন" : "Browse products"}</Link>
         </Empty>
       )}
     </main>
@@ -2278,7 +2296,12 @@ function ShopPage() {
           <h1 className="breadcrumb-current" aria-current="page">{shop.name}</h1>
         </nav>
       </section>
-      <div className="container"><ShopBadge shop={shop}/></div><FlashDeals catalog={catalog} shopId={shop.id}/>
+      <div className="container" style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 16px" }}>
+        <ShopBadge shop={shop}/>
+        {(shop.tagline || shop.description) && (
+          <span className="muted" style={{ fontSize: "var(--text-meta)" }}>{shop.tagline || shop.description}</span>
+        )}
+      </div><FlashDeals catalog={catalog} shopId={shop.id}/>
       <Products shop={shop} />
       <div className="container section">
         <StoreFaqAccordion shop={shop} />
@@ -2512,16 +2535,16 @@ function ProductPage() {
           </Link>
           <div className="detail-price">
             {selected ? money(selected.price) : money(minimumPrice(product), product.currency)}
-            <span>Price per item</span>
+            <span>{lang === "bn" ? "প্রতি আইটেমের মূল্য" : "Price per item"}</span>
           </div>
           {product.description && <div className="product-brief">
-            <h2>Product description</h2>
+            <h2>{lang === "bn" ? "পণ্যের বিবরণ" : "Product description"}</h2>
             <p className="preserve-lines">{product.description}</p>
-            <button type="button" className="text-link" onClick={() => selectSection("overview")}>Read full description <ExternalLink size={14} /></button>
+            <button type="button" className="text-link" onClick={() => selectSection("overview")}>{lang === "bn" ? "সম্পূর্ণ বিবরণ পড়ুন" : "Read full description"} <ExternalLink size={14} /></button>
           </div>}
           {product.variants.length > 1 && (
             <label className="field">
-              Choose your option
+              {lang === "bn" ? "অপশন বেছে নিন" : "Choose your option"}
               <select
                 value={variant}
                 onChange={(e) => { setVariant(e.target.value); setQuantity(1); }}
@@ -2529,7 +2552,7 @@ function ProductPage() {
                 {product.variants.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.name} · {money(v.price, product.currency)}
-                    {!v.stock ? " · Sold out" : ""}
+                    {!v.stock ? (lang === "bn" ? " · স্টক শেষ" : " · Sold out") : ""}
                   </option>
                 ))}
               </select>
@@ -2620,7 +2643,7 @@ function ProductPage() {
           </div>
         </div>
           <section id="customer-reviews" tabIndex={-1} className="product-visual-reviews" aria-label="Customer reviews">
-            <h2 className="product-reviews-heading">Customer reviews</h2>
+            <h2 className="product-reviews-heading">{lang === "bn" ? "গ্রাহক রিভিউ" : "Customer reviews"}</h2>
             {location.pathname === productPath(product, catalog) && <ProductReviews key={product.id} productId={product.id} />}
           </section>
       </div>
@@ -2635,38 +2658,38 @@ function ProductPage() {
           {section === "overview" &&
             <p className="preserve-lines">
               {product.description ||
-                "No additional description is available. Contact the seller if you need more information."}
+                (lang === "bn" ? "অতিরিক্ত কোনো বিবরণ নেই। আরও তথ্যের প্রয়োজন হলে বিক্রেতার সাথে যোগাযোগ করুন।" : "No additional description is available. Contact the seller if you need more information.")}
             </p>}
           {section === "delivery" && <>
-            <p>{!digital ? "Enter your delivery address at checkout to confirm the seller’s shipping charge. Track your shipment in My purchases."
+            <p>{!digital ? (lang === "bn" ? "বিক্রেতার ডেলিভারি চার্জ নিশ্চিত করতে চেকআউটে আপনার ডেলিভারি ঠিকানা লিখুন। আমার অর্ডারসমূহ থেকে শিপমেন্ট ট্র্যাক করুন।" : "Enter your delivery address at checkout to confirm the seller’s shipping charge. Track your shipment in My purchases.")
               : product.delivery_mode === "automatic"
-              ? "Once your payment is verified, open My purchases to access your items privately."
-              : product.delivery_estimate || "Once your payment is verified, the seller prepares your items. Follow your order in My purchases for updates."}</p>
+              ? (lang === "bn" ? "পেমেন্ট যাচাই সম্পন্ন হলে আমার অর্ডারসমূহ থেকে আপনার ডিজিটাল পণ্য গোপনীয়ভাবে সংগ্রহ করুন।" : "Once your payment is verified, open My purchases to access your items privately.")
+              : product.delivery_estimate || (lang === "bn" ? "পেমেন্ট যাচাই হওয়ার পর বিক্রেতা আপনার আইটেম প্রস্তুত করবেন। আপডেটের জন্য আমার অর্ডারসমূহ দেখুন।" : "Once your payment is verified, the seller prepares your items. Follow your order in My purchases for updates.")}</p>
             {product.delivery_note &&
-              <div className="product-delivery-instructions"><h3>Seller’s delivery instructions</h3><p className="preserve-lines">{product.delivery_note}</p></div>}
+              <div className="product-delivery-instructions"><h3>{lang === "bn" ? "বিক্রেতার ডেলিভারি নির্দেশনা" : "Seller’s delivery instructions"}</h3><p className="preserve-lines">{product.delivery_note}</p></div>}
           </>}
-          {section === "terms" && <p className="preserve-lines">{product.purchase_terms || "Contact the seller to confirm purchase terms before ordering."}</p>}
+          {section === "terms" && <p className="preserve-lines">{product.purchase_terms || (lang === "bn" ? "অর্ডার করার আগে ক্রয়ের শর্তাবলী জানতে বিক্রেতার সাথে যোগাযোগ করুন।" : "Contact the seller to confirm purchase terms before ordering.")}</p>}
           {section === "reviews" && <ProductReviews key={product.id} productId={product.id} />}
         </div>
       </dialog>
         <aside className="product-support" aria-label="Seller support">
           {shop.support ? (
             <a className="text-link" href={supportHref(shop.support)}>
-              Contact {shop.name}
+              {lang === "bn" ? `${shop.name}-এর সাথে যোগাযোগ করুন` : `Contact ${shop.name}`}
             </a>
           ) : (
             <p className="muted">
-              Check the shop profile for support information.
+              {lang === "bn" ? "সাপোর্ট তথ্যের জন্য শপ প্রোফাইল দেখুন।" : "Check the shop profile for support information."}
             </p>
           )}
           <details className="report-product">
             <summary>
               <Flag size={14} />
-              Report this listing
+              {lang === "bn" ? "প্রোডাক্টটি রিপোর্ট করুন" : "Report this listing"}
             </summary>
             {sent ? (
               <p role="status">
-                Report submitted. The marketplace team will review it.
+                {lang === "bn" ? "রিপোর্ট জমা হয়েছে। মার্কেটপ্লেস টিম এটি পর্যালোচনা করবে।" : "Report submitted. The marketplace team will review it."}
               </p>
             ) : (
               <form
@@ -2691,7 +2714,7 @@ function ProductPage() {
                 }}
               >
                 <label className="field">
-                  Describe the issue
+                  {lang === "bn" ? "সমস্যার বিবরণ লিখুন" : "Describe the issue"}
                   <textarea
                     minLength={10}
                     maxLength={1000}
@@ -2702,7 +2725,7 @@ function ProductPage() {
                 </label>
                 {error && <ErrorBox message={error} />}
                 <button className="button secondary small" disabled={busy}>
-                  {busy ? "Sending…" : "Send report"}
+                  {busy ? (lang === "bn" ? "পাঠানো হচ্ছে…" : "Sending…") : (lang === "bn" ? "রিপোর্ট পাঠান" : "Send report")}
                 </button>
               </form>
             )}
@@ -2846,8 +2869,8 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
             <>
               <p className="muted form-hint">
                 {session?.user
-                  ? `Signed in as ${session.user.email}`
-                  : "Checking out as a guest. Keep this browser to access your purchases."}
+                  ? (lang === "bn" ? `${session.user.email} হিসেবে সাইন ইন করা আছে` : `Signed in as ${session.user.email}`)
+                  : (lang === "bn" ? "গেস্ট হিসেবে অর্ডার করছেন। আপনার অর্ডার দেখতে এই ব্রাউজারটি সংরক্ষণ করুন।" : "Checking out as a guest. Keep this browser to access your purchases.")}
               </p>
               {(["name", "email", "phone"] as const)
                 .filter((field) => required.has(field))
@@ -2887,25 +2910,25 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
                 ))}
               {!digital && (["address", "district", "landmark", "alt_phone"] as const).filter(field => required.has(field)).map(field => (
                 <label className="field" key={field}>
-                  {({address: "Full delivery address", district: "District", landmark: "Nearby landmark", alt_phone: "Alternative mobile number"})[field]}
+                  {({address: lang === "bn" ? "ডেলিভারির সম্পূর্ণ ঠিকানা" : "Full delivery address", district: lang === "bn" ? "জেলা" : "District", landmark: lang === "bn" ? "কাছাকাছি পরিচিত স্থান" : "Nearby landmark", alt_phone: lang === "bn" ? "বিকল্প মোবাইল নম্বর" : "Alternative mobile number"})[field]}
                   <input name={field} required autoComplete={field === "address" ? "street-address" : field === "district" ? "address-level2" : field === "alt_phone" ? "tel" : "off"}
                     type={field === "alt_phone" ? "tel" : "text"} maxLength={field === "address" ? 4000 : field === "alt_phone" ? 32 : 128}
                     value={fields[field]} onChange={e => setFields({...fields, [field]: e.target.value})} />
                 </label>
               ))}
               <label className="field">
-                {!digital && <span>Order note (optional)</span>}
+                {!digital && <span>{lang === "bn" ? "অর্ডার নোট (ঐচ্ছিক)" : "Order note (optional)"}</span>}
                 {digital && (product.delivery_mode === "manual"
-                  ? "Delivery details (optional)"
-                  : "Order note (optional)")}
+                  ? (lang === "bn" ? "ডেলিভারি বিবরণ (ঐচ্ছিক)" : "Delivery details (optional)")
+                  : (lang === "bn" ? "অর্ডার নোট (ঐচ্ছিক)" : "Order note (optional)"))}
                 <textarea
                   name="note"
                   rows={2}
                   maxLength={500}
                   placeholder={
                     product.delivery_mode === "manual"
-                      ? "Enter the email address or username needed for delivery. Do not include passwords."
-                      : "Add any instructions for the seller"
+                      ? (lang === "bn" ? "ডেলিভারির জন্য প্রয়োজনীয় ইমেইল বা ইউজারনেম লিখুন। কোনো পাসওয়ার্ড লিখবেন না।" : "Enter the email address or username needed for delivery. Do not include passwords.")
+                      : (lang === "bn" ? "বিক্রেতার জন্য কোনো নির্দেশনা থাকলে লিখুন" : "Add any instructions for the seller")
                   }
                   value={fields.note}
                   onChange={(e) =>
@@ -2914,7 +2937,7 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
                 />
               </label>
               <label className="field">
-                Promo code / Coupon (optional)
+                {lang === "bn" ? "প্রোমো কোড / কুপন (ঐচ্ছিক)" : "Promo code / Coupon (optional)"}
                 <div className="coupon-input-row">
                   <input
                     type="text"
@@ -2944,10 +2967,10 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
                     </button>
                   )}
                 </div>
-                <small className="form-hint">Discounts are calculated and verified when you click Review order.</small>
+                <small className="form-hint">{lang === "bn" ? "অর্ডার রিভিউ ধাপে ডিসকাউন্ট হিসাব ও যাচাই করা হবে।" : "Discounts are calculated and verified when you click Review order."}</small>
               </label>
               {!bagItems.length && <label className="field">
-                Quantity
+                {lang === "bn" ? "পরিমাণ" : "Quantity"}
                 <input
                   type="number"
                   aria-label="Quantity"
@@ -2959,7 +2982,7 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
                   value={quantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
                 />
-                <small id="checkout-quantity-hint">{money(unitPrice, product.currency)} each · Up to {Math.min(variant.stock, 100)} per order</small>
+                <small id="checkout-quantity-hint">{lang === "bn" ? `প্রতিটি ${money(unitPrice, product.currency)} · প্রতি অর্ডারে সর্বোচ্চ ${Math.min(variant.stock, 100)}টি` : `${money(unitPrice, product.currency)} each · Up to ${Math.min(variant.stock, 100)} per order`}</small>
               </label>}
               <fieldset className="checkout-payment">
                 <legend>{lang === "bn" ? "পেমেন্ট মাধ্যম" : "Payment method"}</legend>
@@ -3015,37 +3038,37 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
             </>
           ) : (
             <>
-              {!digital && <div className="review-row"><span>Delivery address</span><strong className="preserve-lines">{quote.snapshot.buyer?.address || fields.address}, {quote.snapshot.buyer?.district || fields.district}</strong></div>}
+              {!digital && <div className="review-row"><span>{lang === "bn" ? "ডেলিভারির ঠিকানা" : "Delivery address"}</span><strong className="preserve-lines">{quote.snapshot.buyer?.address || fields.address}, {quote.snapshot.buyer?.district || fields.district}</strong></div>}
               <div className="review-row">
-                <span>Customer</span>
+                <span>{lang === "bn" ? "ক্রেতার নাম" : "Customer"}</span>
                 <strong>{fields.name}</strong>
               </div>
               {fields.email && (
                 <div className="review-row">
-                  <span>Email</span>
+                  <span>{lang === "bn" ? "ইমেইল" : "Email"}</span>
                   <strong>{fields.email}</strong>
                 </div>
               )}
               {fields.phone && (
                 <div className="review-row">
-                  <span>Phone</span>
+                  <span>{lang === "bn" ? "ফোন নম্বর" : "Phone"}</span>
                   <strong>{fields.phone}</strong>
                 </div>
               )}
               {fields.note && (
                 <div className="review-row">
-                  <span>Delivery note</span>
+                  <span>{lang === "bn" ? "ডেলিভারি নোট" : "Delivery note"}</span>
                   <strong className="preserve-lines">{fields.note}</strong>
                 </div>
               )}
               <div className="review-row">
-                <span>Payment method</span>
+                <span>{lang === "bn" ? "পেমেন্ট মাধ্যম" : "Payment method"}</span>
                 <strong>{paymentMethodLabel(provider)}</strong>
               </div>
               {quote.snapshot.items?.map(item=><div key={item.variant_id} className="order-cart-item"><strong>{item.name} · {item.variant} × {item.quantity}</strong><p>{item.digital_config?.purchase_terms || catalog.products.find(p=>p.id===item.product_id)?.purchase_terms}</p></div>)}
               {quote.snapshot.coupon_code && Number(quote.snapshot.discount || "0") > 0 && (
                 <div className="review-row discount-row">
-                  <span>Coupon discount ({quote.snapshot.coupon_code})</span>
+                  <span>{lang === "bn" ? `কুপন ডিসকাউন্ট (${quote.snapshot.coupon_code})` : `Coupon discount (${quote.snapshot.coupon_code})`}</span>
                   <strong className="discount-value">- {money(quote.snapshot.discount!, product.currency)}</strong>
                 </div>
               )}
@@ -3063,13 +3086,13 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
                     </p>
                   </div>
                 )}
-                <h3>Seller’s purchase terms</h3>
+                <h3>{lang === "bn" ? "বিক্রেতার ক্রয়ের শর্তাবলী" : "Seller’s purchase terms"}</h3>
                 <p className="preserve-lines">
-                  {quote.snapshot.digital_config?.purchase_terms || product.purchase_terms || "Contact the seller for purchase terms."}
+                  {quote.snapshot.digital_config?.purchase_terms || product.purchase_terms || (lang === "bn" ? "ক্রয়ের শর্তাবলীর জন্য বিক্রেতার সাথে যোগাযোগ করুন।" : "Contact the seller for purchase terms.")}
                 </p>
-                <h3>Delivery</h3>
+                <h3>{lang === "bn" ? "ডেলিভারি" : "Delivery"}</h3>
                 <p className="preserve-lines">
-                  {digital ? quote.snapshot.digital_config?.delivery_note : "Delivery to the address shown above. Shipping charges are included in the confirmed total."}
+                  {digital ? quote.snapshot.digital_config?.delivery_note : (lang === "bn" ? "উপরে প্রদর্শিত ঠিকানায় ডেলিভারি করা হবে। ডেলিভারি চার্জ মোট মূল্যের সাথে যুক্ত আছে।" : "Delivery to the address shown above. Shipping charges are included in the confirmed total.")}
                 </p>
               </div>
               <label className="checkbox-label">
@@ -3079,7 +3102,7 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
                   onChange={(e) => setAgreed(e.target.checked)}
                   required
                 />
-                I’ve read and accept this seller’s purchase and delivery terms.
+                {lang === "bn" ? "আমি বিক্রেতার ক্রয় ও ডেলিভারি সংক্রান্ত শর্তাবলী পড়েছি এবং সম্মতি দিচ্ছি।" : "I’ve read and accept this seller’s purchase and delivery terms."}
               </label>
             </>
           )}
@@ -3095,16 +3118,16 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
             {busy ? (
               <>
                 <LoaderCircle size={17} className="spin" />
-                {quote ? "Creating your order…" : "Checking price and availability…"}
+                {quote ? (lang === "bn" ? "অর্ডার তৈরি হচ্ছে…" : "Creating your order…") : (lang === "bn" ? "মূল্য ও স্টক যাচাই করা হচ্ছে…" : "Checking price and availability…")}
               </>
             ) : quote ? (
               <>
-                Confirm order
+                {lang === "bn" ? "অর্ডার নিশ্চিত করুন" : "Confirm order"}
                 <ArrowRight size={17} />
               </>
             ) : (
               <>
-                Review order
+                {lang === "bn" ? "অর্ডার রিভিউ করুন" : "Review order"}
                 <ArrowRight size={17} />
               </>
             )}
@@ -3119,46 +3142,46 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
                 setAgreed(false);
               }}
             >
-              Edit order details
+              {lang === "bn" ? "অর্ডারের তথ্য পরিবর্তন করুন" : "Edit order details"}
             </button>
           )}
         </form>
         <aside className="panel order-summary" aria-label="Order summary">
           <Art product={product} />
           <div className="order-summary-content">
-            <span className="eyebrow">From {shop.name} · {shopType(shop)}</span>
+            <span className="eyebrow">{lang === "bn" ? `${shop.name} · ${shopType(shop)}` : `From ${shop.name} · ${shopType(shop)}`}</span>
             <h2>{quote?.snapshot.name ?? (bagItems.length ? `${displayQuantity} items from ${shop.name}` : product.name)}</h2>
             {product.variants.length > 1 && <p>{quote?.snapshot.variant ?? variant.name}</p>}
             <div className="summary-line">
-              <span>Quantity</span>
+              <span>{lang === "bn" ? "পরিমাণ" : "Quantity"}</span>
               <strong>{quote?.snapshot.quantity ?? displayQuantity}</strong>
             </div>
             {!quote && <div className="summary-line">
-              <span>Price per item</span>
+              <span>{lang === "bn" ? "প্রতি আইটেমের মূল্য" : "Price per item"}</span>
               <strong>{money(unitPrice, product.currency)}</strong>
             </div>}
             <div className="summary-line">
-              <span>Delivery</span>
-              <strong>{digital ? "Digital · no shipping" : quote?.snapshot.delivery_charge !== undefined ? money(quote.snapshot.delivery_charge, product.currency) : "Calculated at review"}</strong>
+              <span>{lang === "bn" ? "ডেলিভারি" : "Delivery"}</span>
+              <strong>{digital ? (lang === "bn" ? "ডিজিটাল · কোনো শিপিং চার্জ নেই" : "Digital · no shipping") : quote?.snapshot.delivery_charge !== undefined ? money(quote.snapshot.delivery_charge, product.currency) : (lang === "bn" ? "রিভিউ ধাপে হিসাব হবে" : "Calculated at review")}</strong>
             </div>
             {quote?.snapshot.discount && Number(quote.snapshot.discount) > 0 ? (
               <>
                 <div className="summary-line">
-                  <span>Subtotal</span>
+                  <span>{lang === "bn" ? "সাবটোটাল" : "Subtotal"}</span>
                   <strong>{money(quote.snapshot.subtotal || (Number(unitPrice) * (quote.snapshot.quantity || quantity)).toFixed(2))}</strong>
                 </div>
                 <div className="summary-line discount-line">
                   <span>
-                    Discount <span className="coupon-code-badge">{quote.snapshot.coupon_code}</span>
+                    {lang === "bn" ? "ডিসকাউন্ট" : "Discount"} <span className="coupon-code-badge">{quote.snapshot.coupon_code}</span>
                   </span>
                   <strong className="discount-amount">- {money(quote.snapshot.discount)}</strong>
                 </div>
               </>
             ) : null}
             <div className="summary-total" aria-live="polite" aria-atomic="true">
-              <span>{quote ? (digital ? "Total to pay" : "Order total") : (digital ? "Estimated total" : "Products subtotal")}</span>
+              <span>{quote ? (digital ? (lang === "bn" ? "মোট প্রদেয়" : "Total to pay") : (lang === "bn" ? "সর্বমোট মূল্য" : "Order total")) : (digital ? (lang === "bn" ? "আনুমানিক মোট মূল্য" : "Estimated total") : (lang === "bn" ? "পণ্যের সাবটোটাল" : "Products subtotal"))}</span>
               <strong>{total !== null ? money(total, product.currency) : "—"}</strong>
-              <small>{quote ? "Current price confirmed by the seller." : digital ? "Price and availability are confirmed at review." : "Shipping and any required advance are confirmed by the source at review."}</small>
+              <small>{quote ? (lang === "bn" ? "বিক্রেতা কর্তৃক নিশ্চিতকৃত বর্তমান মূল্য।" : "Current price confirmed by the seller.") : digital ? (lang === "bn" ? "রিভিউ ধাপে মূল্য ও স্টক নিশ্চিত করা হবে।" : "Price and availability are confirmed at review.") : (lang === "bn" ? "ডেলিভারি চার্জ ও প্রয়োজনীয় অগ্রিম রিভিউ ধাপে নিশ্চিত করা হবে।" : "Shipping and any required advance are confirmed by the source at review.")}</small>
             </div>
           </div>
         </aside>
@@ -3170,7 +3193,8 @@ function Purchases() {
   const { session, sessionError } = useMarket();
   const { lang, t } = useLang();
   const [orders, setOrders] = useState<Purchase[] | null>(null),
-    [error, setError] = useState("");
+    [error, setError] = useState(""),
+    [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending">("all");
   const load = () => {
     setError("");
     api<{ orders: Purchase[] }>("/orders")
@@ -3180,6 +3204,12 @@ function Purchases() {
   useEffect(() => {
     if (session) load();
   }, [session?.csrf]);
+  const visibleOrders = useMemo(() => {
+    if (!orders) return [];
+    if (statusFilter === "paid") return orders.filter((o) => o.payment_status === "paid");
+    if (statusFilter === "pending") return orders.filter((o) => o.payment_status !== "paid" && o.delivery_status !== "cancelled");
+    return orders;
+  }, [orders, statusFilter]);
   return (
     <main id="main" className="container listing-page narrow-page">
       <div className="page-intro">
@@ -3192,15 +3222,15 @@ function Purchases() {
         <div className="notice">
           <LockKeyhole size={18} />
           <p>
-            Guest purchases stay in this browser until you sign in, sign out, or
-            clear cookies. Sign in before checkout to connect future purchases
-            to your account.
+            {lang === "bn"
+              ? "গেস্ট হিসেবে করা অর্ডার আপনি সাইন ইন, সাইন আউট বা কুকি মুছে না ফেলা পর্যন্ত এই ব্রাউজারে সংরক্ষিত থাকে। ভবিষ্যতের অর্ডার অ্যাকাউন্টে যুক্ত করতে চেকআউটের আগে সাইন ইন করুন।"
+              : "Guest purchases stay in this browser until you sign in, sign out, or clear cookies. Sign in before checkout to connect future purchases to your account."}
           </p>
           <a
             className="text-link"
             href="/api/auth/start?return_to=%2Fpurchases"
           >
-            Continue with AriseSell
+            {lang === "bn" ? "AriseSell দিয়ে কন্টিনিউ করুন" : "Continue with AriseSell"}
           </a>
         </div>
       )}
@@ -3209,54 +3239,88 @@ function Purchases() {
       ) : !orders ? (
         <Loading />
       ) : orders.length ? (
-        <div className="purchase-list">
-          {orders.map((order) => (
-            <Link
-              key={order.id}
-              className="purchase-card"
-              to={`/purchases/${order.id}`}
-            >
-              <span className="purchase-icon">
-                <Package />
-              </span>
-              <div>
-                <span className="order-ref">
-                  {order.ref} · {order.shop.name}
-                </span>
-                <h2>{order.name}</h2>
-                <span>
-                  {order.quantity} {order.quantity === 1 ? (lang === "bn" ? "টি আইটেম" : "item") : (lang === "bn" ? "টি আইটেম" : "items")} ·{" "}
-                  {money(order.total, order.currency)}
-                </span>
-              </div>
-              <div className="purchase-status">
-                <span
-                  className={`pill ${order.payment_status === "paid" ? "positive" : ""}`}
+        <>
+          {orders.length > 1 && (
+            <div className="catalog-toolbar-row" style={{ marginBottom: "16px" }}>
+              <div className="filter-chips" role="group" aria-label={lang === "bn" ? "অর্ডার স্ট্যাটাস ফিল্টার" : "Order status filter"}>
+                <button
+                  type="button"
+                  className={statusFilter === "all" ? "chip selected" : "chip"}
+                  aria-pressed={statusFilter === "all"}
+                  onClick={() => setStatusFilter("all")}
                 >
-                  {order.delivery_status === "cancelled"
-                    ? (lang === "bn" ? "বাতিল" : "Cancelled")
-                    : order.payment_status === "paid"
-                      ? deliveryLabel(order.delivery_status, lang)
-                      : paymentLabel(order.payment_status, lang)}
-                </span>
-                <span>
-                  {new Date(order.created_at).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </span>
+                  {lang === "bn" ? `সব অর্ডার (${orders.length})` : `All orders (${orders.length})`}
+                </button>
+                <button
+                  type="button"
+                  className={statusFilter === "paid" ? "chip selected" : "chip"}
+                  aria-pressed={statusFilter === "paid"}
+                  onClick={() => setStatusFilter("paid")}
+                >
+                  {lang === "bn" ? "পরিশোধিত ও ডেলিভারি" : "Paid & delivered"}
+                </button>
+                <button
+                  type="button"
+                  className={statusFilter === "pending" ? "chip selected" : "chip"}
+                  aria-pressed={statusFilter === "pending"}
+                  onClick={() => setStatusFilter("pending")}
+                >
+                  {lang === "bn" ? "পেমেন্ট বাকি" : "Awaiting payment"}
+                </button>
               </div>
-            </Link>
-          ))}
-        </div>
+            </div>
+          )}
+          <div className="purchase-list">
+            {visibleOrders.map((order) => (
+              <Link
+                key={order.id}
+                className="purchase-card"
+                to={`/purchases/${order.id}`}
+              >
+                <span className="purchase-icon">
+                  <Package />
+                </span>
+                <div>
+                  <span className="order-ref">
+                    {order.ref} · {order.shop.name}
+                  </span>
+                  <h2>{order.name}</h2>
+                  <span>
+                    {order.quantity} {order.quantity === 1 ? (lang === "bn" ? "টি আইটেম" : "item") : (lang === "bn" ? "টি আইটেম" : "items")} ·{" "}
+                    {money(order.total, order.currency)}
+                  </span>
+                </div>
+                <div className="purchase-status">
+                  <span
+                    className={`pill ${order.payment_status === "paid" ? "positive" : ""}`}
+                  >
+                    {order.delivery_status === "cancelled"
+                      ? (lang === "bn" ? "বাতিল" : "Cancelled")
+                      : order.payment_status === "paid"
+                        ? deliveryLabel(order.delivery_status, lang)
+                        : paymentLabel(order.payment_status, lang)}
+                  </span>
+                  <span>
+                    {new Date(order.created_at).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </>
       ) : (
-        <Empty title="No purchases yet">
+        <Empty title={lang === "bn" ? "এখনও কোনো অর্ডার নেই" : "No purchases yet"}>
           <p>
-            Orders placed in this browser or with your signed-in account appear here.
+            {lang === "bn"
+              ? "এই ব্রাউজারে অথবা আপনার সাইন-ইন করা অ্যাকাউন্টে করা অর্ডারগুলো এখানে দেখা যাবে।"
+              : "Orders placed in this browser or with your signed-in account appear here."}
           </p>
           <Link to="/products" className="button primary">
-            Browse products
+            {lang === "bn" ? "প্রোডাক্ট ব্রাউজ করুন" : "Browse products"}
             <ArrowRight size={17} />
           </Link>
         </Empty>
@@ -3266,11 +3330,12 @@ function Purchases() {
 }
 function CopyButton({
   value,
-  label = "Copy",
+  label,
 }: {
   value: string;
   label?: string;
 }) {
+  const { lang } = useLang();
   const [copied, setCopied] = useState(false),
     [error, setError] = useState(false);
   return (
@@ -3290,7 +3355,11 @@ function CopyButton({
     >
       {copied ? <Check size={14} /> : <Copy size={14} />}
       <span aria-live="polite">
-        {copied ? "Copied" : error ? "Copy manually" : label}
+        {copied
+          ? (lang === "bn" ? "কপি হয়েছে" : "Copied")
+          : error
+            ? (lang === "bn" ? "ম্যানুয়ালি কপি করুন" : "Copy manually")
+            : (label || (lang === "bn" ? "কপি করুন" : "Copy"))}
       </span>
     </button>
   );
@@ -3677,9 +3746,9 @@ function PurchasePage() {
             )}
             {order.fulfilment_kind === "physical" && <section className="purchase-buyer-info" aria-label="Delivery details">
               {!!order.custom_summary?.length && <><h3>{lang === "bn" ? "কাস্টম পণ্যের বিবরণ" : "Custom product details"}</h3>{order.custom_summary.map((text, i) => <p key={i}>{text}</p>)}</>}
-              <h3>Delivery details</h3><p className="preserve-lines">{order.address}, {order.district}</p>
-              <p>Payment method: {paymentMethodLabel(order.payment_method || "cod")}</p>
-              {order.delivery_charge !== undefined && <p>Delivery charge: {money(order.delivery_charge, order.currency)}</p>}
+              <h3>{lang === "bn" ? "ডেলিভারির বিবরণ" : "Delivery details"}</h3><p className="preserve-lines">{order.address}, {order.district}</p>
+              <p>{lang === "bn" ? "পেমেন্ট মাধ্যম:" : "Payment method:"} {paymentMethodLabel(order.payment_method || "cod")}</p>
+              {order.delivery_charge !== undefined && <p>{lang === "bn" ? "ডেলিভারি চার্জ:" : "Delivery charge:"} {money(order.delivery_charge, order.currency)}</p>}
               {Number(order.advance_amount || 0) > 0 && (
                 <p className="advance-order-info">
                   <strong>{lang === "bn" ? "প্রয়োজনীয় অগ্রিম:" : "Required advance:"}</strong> {money(order.advance_amount!, order.currency)}
@@ -3693,7 +3762,7 @@ function PurchasePage() {
               {(!paid || !order.payment) && (
                 <>
                   <CourierStatus order={order}/>
-                  {order.tracking?.tracking_url?.startsWith("https://") && <a className="button secondary" href={order.tracking.tracking_url} target="_blank" rel="noopener noreferrer">Track with courier<ExternalLink size={16} /></a>}
+                  {order.tracking?.tracking_url?.startsWith("https://") && <a className="button secondary" href={order.tracking.tracking_url} target="_blank" rel="noopener noreferrer">{lang === "bn" ? "কুরিয়ারে ট্র্যাক করুন" : "Track with courier"}<ExternalLink size={16} /></a>}
                 </>
               )}
             </section>}
@@ -3781,7 +3850,9 @@ function PurchasePage() {
                 <div className="notice" style={{ marginTop: "16px", marginBottom: 0 }}>
                   <Package size={22} />
                   <p>
-                    {order.delivery_status === "needs_attention" ? "Contact the seller using the support details below." : "Check the delivery status above for updates. This page refreshes automatically."}
+                    {order.delivery_status === "needs_attention"
+                      ? (lang === "bn" ? "নিচের সাপোর্ট তথ্যের মাধ্যমে বিক্রেতার সাথে যোগাযোগ করুন।" : "Contact the seller using the support details below.")
+                      : (lang === "bn" ? "আপডেটের জন্য উপরের ডেলিভারি স্ট্যাটাস দেখুন। এই পেজটি স্বয়ংক্রিয়ভাবে রিফ্রেশ হয়।" : "Check the delivery status above for updates. This page refreshes automatically.")}
                   </p>
                 </div>
               )}
@@ -3865,7 +3936,9 @@ function PurchasePage() {
               <div className="notice" style={{ margin: 0 }}>
                 <Package size={22} />
                 <p>
-                  {order.delivery_status === "needs_attention" ? "Contact the seller using the support details below." : "Check the delivery status above for updates. This page refreshes automatically."}
+                  {order.delivery_status === "needs_attention"
+                    ? (lang === "bn" ? "নিচের সাপোর্ট তথ্যের মাধ্যমে বিক্রেতার সাথে যোগাযোগ করুন।" : "Contact the seller using the support details below.")
+                    : (lang === "bn" ? "আপডেটের জন্য উপরের ডেলিভারি স্ট্যাটাস দেখুন। এই পেজটি স্বয়ংক্রিয়ভাবে রিফ্রেশ হয়।" : "Check the delivery status above for updates. This page refreshes automatically.")}
                 </p>
               </div>
             </div>
@@ -4017,9 +4090,9 @@ function Seller({ settings = false }: { settings?: boolean }) {
   return (
     <main id="main" className="container seller-page">
       <div className="page-intro">
-        <p className="eyebrow">{settings ? (lang === "bn" ? "আপনার অ্যাকাউন্ট" : "Your account") : "Seller workspace"}</p>
-        <h1>{settings ? (lang === "bn" ? "সেটিংস" : "Settings") : session?.user ? "Manage your shop" : <>Sell your products</>}</h1>
-        <p>{settings ? (lang === "bn" ? "আপনার shop setup, প্রোফাইল, তথ্য ও প্রকাশিত পণ্য ম্যানেজ করুন।" : "Manage your shop setup, profile, information and published products.") : session?.user ? "Update your profile, choose products, and share your shop link." : "Connect your AriseSell account to publish your products here."}</p>
+        <p className="eyebrow">{settings ? (lang === "bn" ? "আপনার অ্যাকাউন্ট" : "Your account") : (lang === "bn" ? "সেলার ওয়ার্কস্পেস" : "Seller workspace")}</p>
+        <h1>{settings ? (lang === "bn" ? "সেটিংস" : "Settings") : session?.user ? (lang === "bn" ? "আপনার শপ পরিচালনা করুন" : "Manage your shop") : (lang === "bn" ? "আপনার পণ্য বিক্রি করুন" : <>Sell your products</>)}</h1>
+        <p>{settings ? (lang === "bn" ? "আপনার shop setup, প্রোফাইল, তথ্য ও প্রকাশিত পণ্য ম্যানেজ করুন।" : "Manage your shop setup, profile, information and published products.") : session?.user ? (lang === "bn" ? "আপনার প্রোফাইল আপডেট করুন, পণ্য নির্বাচন করুন এবং শপের লিংক শেয়ার করুন।" : "Update your profile, choose products, and share your shop link.") : (lang === "bn" ? "এখানে আপনার পণ্য প্রকাশ করতে AriseSell অ্যাকাউন্ট যুক্ত করুন।" : "Connect your AriseSell account to publish your products here.")}</p>
       </div>
       {settings && session?.user && <section className="panel account-settings-summary" aria-label={lang === "bn" ? "সংযুক্ত অ্যাকাউন্ট" : "Connected account"}>
         <div><strong>{session.user.name}</strong><p>{session.user.email}</p></div>
@@ -4033,14 +4106,13 @@ function Seller({ settings = false }: { settings?: boolean }) {
       </nav>}
       <ol className="onboarding-steps">
         <li className={session?.user ? "complete" : "active"}>
-          <span>{session?.user ? <Check size={16} /> : "1"}</span>Connect
-          AriseSell
+          <span>{session?.user ? <Check size={16} /> : "1"}</span>{lang === "bn" ? "AriseSell যুক্ত করুন" : "Connect AriseSell"}
         </li>
         <li className={session?.user ? "active" : ""}>
-          <span>2</span>Set up your shop
+          <span>2</span>{lang === "bn" ? "শপ সেটআপ করুন" : "Set up your shop"}
         </li>
         <li className={data?.shop.published ? "complete" : ""}>
-          <span>{data?.shop.published ? <Check size={16} /> : "3"}</span>Publish products
+          <span>{data?.shop.published ? <Check size={16} /> : "3"}</span>{lang === "bn" ? "পণ্য প্রকাশ করুন" : "Publish products"}
         </li>
       </ol>
       {sessionError && (
@@ -4595,34 +4667,42 @@ function Seller({ settings = false }: { settings?: boolean }) {
   );
 }
 function HowItWorks() {
+  const { lang } = useLang();
   return (
     <main id="main" className="container listing-page">
       <div className="page-intro">
-        <p className="eyebrow">How it works</p>
+        <p className="eyebrow">{lang === "bn" ? "কীভাবে কাজ করে" : "How it works"}</p>
         <h1>
-          How to buy products
+          {lang === "bn" ? "কীভাবে পণ্য কিনবেন" : "How to buy products"}
         </h1>
         <p>
-          Independent shops, products, and a straightforward way to make
-          them yours.
+          {lang === "bn"
+            ? "স্বাধীন শপ ও পণ্য থেকে সহজ এবং নিরাপদ উপায়ে কেনাকাটা করুন।"
+            : "Independent shops, products, and a straightforward way to make them yours."}
         </p>
       </div>
       <div className="how-grid">
         {[
           [
             Search,
-            "Choose a product",
-            "Browse products and independent shops. Check the description, options, delivery details, and seller’s terms.",
+            lang === "bn" ? "পণ্য নির্বাচন করুন" : "Choose a product",
+            lang === "bn"
+              ? "পণ্য এবং স্বাধীন শপগুলো ব্রাউজ করুন। বিবরণ, অপশন, ডেলিভারি তথ্য এবং বিক্রেতার শর্তাবলী দেখে নিন।"
+              : "Browse products and independent shops. Check the description, options, delivery details, and seller’s terms.",
           ],
           [
             LockKeyhole,
-            "Review and pay",
-            "Choose a product, confirm its current price and terms, and follow the seller’s payment instructions.",
+            lang === "bn" ? "রিভিউ ও পেমেন্ট করুন" : "Review and pay",
+            lang === "bn"
+              ? "পণ্য নির্বাচন করে বর্তমান মূল্য ও শর্তাবলী নিশ্চিত করুন এবং বিক্রেতার পেমেন্ট নির্দেশিকা অনুসরণ করুন।"
+              : "Choose a product, confirm its current price and terms, and follow the seller’s payment instructions.",
           ],
           [
             Download,
-            "Follow your order",
-            "Follow your order in My purchases. Physical orders show delivery and courier tracking. Digital items become available after verified payment and preparation.",
+            lang === "bn" ? "আপনার অর্ডার অনুসরণ করুন" : "Follow your order",
+            lang === "bn"
+              ? "আমার অর্ডারসমূহ থেকে অর্ডারের আপডেট দেখুন। ফিজিক্যাল অর্ডারে কুরিয়ার ট্র্যাকিং এবং ডিজিটাল অর্ডারে পেমেন্ট যাচাইয়ের পর আইটেম পাওয়া যাবে।"
+              : "Follow your order in My purchases. Physical orders show delivery and courier tracking. Digital items become available after verified payment and preparation.",
           ],
         ].map(([Icon, title, text]) => {
           const I = Icon as typeof Search;
@@ -4638,31 +4718,43 @@ function HowItWorks() {
         })}
       </div>
       <div className="faq-section">
-        <h2>Frequently asked questions</h2>
+        <h2>{lang === "bn" ? "সচরাচর জিজ্ঞাসিত প্রশ্নাবলী" : "Frequently asked questions"}</h2>
         {[
           [
-            "Who am I buying from?",
-            "You buy directly from the shop shown on the product page. Arise Store helps you discover it; the seller’s AriseSell account manages the order, payment and delivery.",
+            lang === "bn" ? "আমি কার কাছ থেকে কিনছি?" : "Who am I buying from?",
+            lang === "bn"
+              ? "প্রোডাক্ট পেজে দেখানো শপ থেকে আপনি সরাসরি কিনছেন। Arise Store আপনাকে পণ্যটি খুঁজে পেতে সাহায্য করে; বিক্রেতার AriseSell অ্যাকাউন্ট অর্ডার, পেমেন্ট ও ডেলিভারি পরিচালনা করে।"
+              : "You buy directly from the shop shown on the product page. Arise Store helps you discover it; the seller’s AriseSell account manages the order, payment and delivery.",
           ],
           [
-            "Do I need an account?",
-            "You can check out as a guest. Keep the same browser to find guest purchases. Sign in with AriseSell before checkout to connect purchases to your account.",
+            lang === "bn" ? "আমার কি অ্যাকাউন্ট থাকা বাধ্যতামূলক?" : "Do I need an account?",
+            lang === "bn"
+              ? "আপনি গেস্ট হিসেবেও অর্ডার করতে পারেন। গেস্ট অর্ডার দেখতে একই ব্রাউজার ব্যবহার করুন। ভবিষ্যতের অর্ডার অ্যাকাউন্টে যুক্ত রাখতে চেকআউটের আগে AriseSell দিয়ে সাইন ইন করুন।"
+              : "You can check out as a guest. Keep the same browser to find guest purchases. Sign in with AriseSell before checkout to connect purchases to your account.",
           ],
           [
-            "What happens after I enter a TrxID?",
-            "AriseSell matches the transaction with the seller’s payment records. Entering a transaction ID alone does not mark an order as paid.",
+            lang === "bn" ? "TrxID দেওয়ার পর কী হয়?" : "What happens after I enter a TrxID?",
+            lang === "bn"
+              ? "AriseSell আপনার ট্রানজাকশন আইডি বিক্রেতার পেমেন্ট রেকর্ডের সাথে মিলিয়ে দেখে। শুধুমাত্র TrxID লিখলেই অর্ডার পরিশোধিত হিসেবে গণ্য হয় না।"
+              : "AriseSell matches the transaction with the seller’s payment records. Entering a transaction ID alone does not mark an order as paid.",
           ],
           [
-            "What if I need help or a refund?",
-            "Contact the seller using the support details on the shop or purchase page. Review the product’s purchase terms before buying; eligibility and support depend on that seller’s policy.",
+            lang === "bn" ? "সহায়তা বা রিফান্ড প্রয়োজন হলে কী করব?" : "What if I need help or a refund?",
+            lang === "bn"
+              ? "শপ বা অর্ডার পেজে দেওয়া সাপোর্ট তথ্যের মাধ্যমে বিক্রেতার সাথে যোগাযোগ করুন। কেনার আগে পণ্যের শর্তাবলী দেখে নিন; রিফান্ড ও সহায়তা সংশ্লিষ্ট বিক্রেতার নীতিমালার ওপর নির্ভর করে।"
+              : "Contact the seller using the support details on the shop or purchase page. Review the product’s purchase terms before buying; eligibility and support depend on that seller’s policy.",
           ],
           [
-            "How do I sell here?",
-            "Choose Start selling and Continue with AriseSell. Connect your account, complete your shop profile, select your active products, and publish.",
+            lang === "bn" ? "আমি এখানে কীভাবে বিক্রি করব?" : "How do I sell here?",
+            lang === "bn"
+              ? "শপ খুলুন বাটনে ক্লিক করে AriseSell দিয়ে কন্টিনিউ করুন। আপনার অ্যাকাউন্ট যুক্ত করুন, শপ প্রোফাইল সম্পূর্ণ করুন, সক্রিয় পণ্য নির্বাচন করুন এবং পাবলিশ করুন।"
+              : "Choose Start selling and Continue with AriseSell. Connect your account, complete your shop profile, select your active products, and publish.",
           ],
           [
-            "Can I share a link to just my shop?",
-            "Yes. Connect and publish your shop, then use Copy shop link in your seller dashboard. Share it on your Facebook or Instagram page, or send it to customers. It opens your shop directly, with your products, search and checkout. Customers can buy as guests.",
+            lang === "bn" ? "আমি কি শুধু আমার শপের লিংক শেয়ার করতে পারব?" : "Can I share a link to just my shop?",
+            lang === "bn"
+              ? "হ্যাঁ। আপনার শপ যুক্ত ও পাবলিশ করার পর সেলার ড্যাশবোর্ড থেকে Copy shop link ব্যবহার করুন। এটি আপনার ফেসবুক বা ইনস্টাগ্রাম পেজে শেয়ার করুন অথবা ক্রেতাদের পাঠান।"
+              : "Yes. Connect and publish your shop, then use Copy shop link in your seller dashboard. Share it on your Facebook or Instagram page, or send it to customers. It opens your shop directly, with your products, search and checkout. Customers can buy as guests.",
           ],
         ].map(([question, answer]) => (
           <details key={question}>
@@ -4676,7 +4768,7 @@ function HowItWorks() {
       </div>
       <div className="centered-cta">
         <Link to="/products" className="button primary">
-          Browse products
+          {lang === "bn" ? "প্রোডাক্ট ব্রাউজ করুন" : "Browse products"}
           <ArrowRight size={18} />
         </Link>
       </div>
@@ -4691,14 +4783,17 @@ function AdminEntry() {
   return <Suspense fallback={<Loading />}><AdminConsole key={session.user.id} user={session.user} sourceWeb={session.source_web} reloadCatalog={reloadCatalog} onSignOut={signOut} /></Suspense>;
 }
 function NotFound() {
+  const { lang } = useLang();
   return (
     <main id="main" className="container section">
-      <Empty title="Page not found" heading="h1">
+      <Empty title={lang === "bn" ? "পেজটি খুঁজে পাওয়া যায়নি" : "Page not found"} heading="h1">
         <p>
-          This page may have moved, or the product or shop is no longer available. Browse products to continue.
+          {lang === "bn"
+            ? "এই পেজটি হয়তো সরানো হয়েছে, অথবা পণ্য বা শপটি আর উপলব্ধ নেই। কেনাকাটা চালিয়ে যেতে প্রোডাক্ট ব্রাউজ করুন।"
+            : "This page may have moved, or the product or shop is no longer available. Browse products to continue."}
         </p>
         <Link className="button primary" to="/products">
-          Browse products
+          {lang === "bn" ? "প্রোডাক্ট ব্রাউজ করুন" : "Browse products"}
           <ArrowRight size={17} />
         </Link>
       </Empty>
