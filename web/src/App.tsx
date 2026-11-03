@@ -2718,9 +2718,9 @@ function Checkout() {
   const {id} = useParams();
   const {catalog,session} = useMarket();
   const product = catalog?.products.find(p => p.id === id);
-  return product?.custom_order && product.checkout_available !== false ? <Suspense fallback={<Loading />}><CraftCheckout key={`${product.id}:${session?.user?.id || "guest"}:${session?.csrf || ""}`} product={product}><CheckoutDetails /></CraftCheckout></Suspense> : <CheckoutDetails />;
+  return product?.custom_order && product.checkout_available !== false ? <Suspense fallback={<Loading />}><CraftCheckout key={`${product.id}:${session?.user?.id || "guest"}:${session?.csrf || ""}`} product={product}>{unitPrice => <CheckoutDetails craftUnitPrice={unitPrice}/>}</CraftCheckout></Suspense> : <CheckoutDetails />;
 }
-function CheckoutDetails() {
+function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
   const { id } = useParams();
   const { catalog, catalogError, session } = useMarket();
   const { lang, t } = useLang();
@@ -2766,7 +2766,8 @@ function CheckoutDetails() {
   if (!canCheckout(product, shop)) return <main id="main" className="container section"><h1>Checkout unavailable</h1><p>{product.checkout_unavailable_reason || "Contact the seller to confirm how to order this product."}</p><Link className="button secondary" to={productPath(product, catalog)}>Back to product</Link></main>;
   const required = new Set(["name", ...product.required_buyer_fields, ...cartRows.flatMap(row=>row.product?.required_buyer_fields || [])]);
   const cartTotal = bagItems.length ? bagItems.reduce((sum,item)=>{const p=catalog.products.find(p=>p.id===item.product_id),v=p?.variants.find(v=>v.id===item.variant_id);return sum+Number(checkoutTotal(v?.price||"0",item.quantity)||0);},0).toFixed(2) : null;
-  const estimatedTotal = cartTotal ?? checkoutTotal(variant.price, quantity);
+  const unitPrice = craftUnitPrice ?? variant.price;
+  const estimatedTotal = cartTotal ?? checkoutTotal(unitPrice, quantity);
   const validQuantity = !catalogError && estimatedTotal !== null && paymentMethods.length > 0 && (bagItems.length ? bagItems.every(item=>{const p=catalog.products.find(p=>p.id===item.product_id),v=p?.variants.find(v=>v.id===item.variant_id);return !!p&&!!v&&canCheckout(p,shop)&&item.quantity<=Math.min(v.stock,100);}) : quantity <= Math.min(variant.stock, 100));
   const displayQuantity = bagItems.length ? bagItems.reduce((sum,item)=>sum+item.quantity,0) : quantity;
   const total = quote?.snapshot.total ?? (validQuantity ? estimatedTotal : null);
@@ -2958,7 +2959,7 @@ function CheckoutDetails() {
                   value={quantity}
                   onChange={(e) => setQuantity(Number(e.target.value))}
                 />
-                <small id="checkout-quantity-hint">{money(variant.price, product.currency)} each · Up to {Math.min(variant.stock, 100)} per order</small>
+                <small id="checkout-quantity-hint">{money(unitPrice, product.currency)} each · Up to {Math.min(variant.stock, 100)} per order</small>
               </label>}
               <fieldset className="checkout-payment">
                 <legend>{lang === "bn" ? "পেমেন্ট মাধ্যম" : "Payment method"}</legend>
@@ -3134,7 +3135,7 @@ function CheckoutDetails() {
             </div>
             {!quote && <div className="summary-line">
               <span>Price per item</span>
-              <strong>{money(variant.price, product.currency)}</strong>
+              <strong>{money(unitPrice, product.currency)}</strong>
             </div>}
             <div className="summary-line">
               <span>Delivery</span>
@@ -3144,7 +3145,7 @@ function CheckoutDetails() {
               <>
                 <div className="summary-line">
                   <span>Subtotal</span>
-                  <strong>{money(quote.snapshot.subtotal || (Number(variant.price) * (quote.snapshot.quantity || quantity)).toFixed(2))}</strong>
+                  <strong>{money(quote.snapshot.subtotal || (Number(unitPrice) * (quote.snapshot.quantity || quantity)).toFixed(2))}</strong>
                 </div>
                 <div className="summary-line discount-line">
                   <span>

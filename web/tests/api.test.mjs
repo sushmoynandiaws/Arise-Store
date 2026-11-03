@@ -10,6 +10,24 @@ function client(fetch=async()=>({ok:true,json:async()=>({ok:true})}), clock=Date
   vm.runInNewContext(code,{exports,fetch,Intl,Number,Date:clock});return exports;
 }
 
+test("craft prices use exact source package proportions, per-set rounding and option charges",()=>{
+  const {craftPrice} = client();
+  for (const [price,pieces,packagePieces,quantity,extras,unit,total] of [
+    ["150.00",11,1,1,[],"1650.00","1650.00"],
+    ["150.00",2,1,3,[],"300.00","900.00"],
+    ["150.00",2,3,2,[],"100.00","200.00"],
+    ["100.00",1,3,3,[],"33.33","99.99"],
+    ["0.01",1,2,2,[],"0.01","0.02"],
+    ["150.00",2,3,2,["25.00"],"125.00","250.00"],
+    ["150.00",0,1,2,["25.00"],"0.00","0.00"],
+  ]) {
+    const actual = craftPrice(price,pieces,packagePieces,quantity,extras);
+    assert.equal(actual.unit_price,unit); assert.equal(actual.total,total);
+  }
+  for (const args of [["-1",1,1,1],["150",1,0,1],["150",-1,1,1],["150",1.5,1,1],["150",1,1,101],["150",1,1,1,["NaN"]],["900719925474.00",60000,1,100]])
+    assert.equal(craftPrice(...args),null);
+});
+
 test("courier labels preserve source pickup and delivery stages",()=>{
   const {deliveryLabel}=client();
   assert.equal(deliveryLabel("pickup_pending"),"Awaiting pickup");

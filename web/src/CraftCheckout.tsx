@@ -1,12 +1,12 @@
 import {useEffect, useRef, useState, type ReactNode} from "react";
 import {Link, useSearchParams} from "react-router-dom";
-import {api, checkoutQuantity} from "./api";
+import {api, checkoutQuantity, craftPrice, money} from "./api";
 import {useLang} from "./i18n";
 import type {Product} from "./types";
 import {designName} from "./product";
 
 type SavedImage = {kind: "image"; message_id: string; url?: string};
-type Selection = {id: string; ready: boolean; reason: string; product_id: string; variant_id: string; quantity: number; summary?: string[]; selection?: {code: string; qty: number}[]; answers?: Record<string, string | SavedImage>; artwork?: SavedImage | null; proof: {id: string; url: string; revision: string; approved: boolean} | null};
+type Selection = {id: string; ready: boolean; reason: string; product_id: string; variant_id: string; quantity: number; unit_price?: string | null; summary?: string[]; selection?: {code: string; qty: number}[]; answers?: Record<string, string | SavedImage>; artwork?: SavedImage | null; proof: {id: string; url: string; revision: string; approved: boolean} | null};
 
 async function imageData(file?: File) {
   if (!file) return "";
@@ -19,7 +19,7 @@ async function imageData(file?: File) {
   });
 }
 
-export function CraftCheckout({product, children}: {product: Product; children: ReactNode}) {
+export function CraftCheckout({product, children}: {product: Product; children: (unitPrice?: string) => ReactNode}) {
   const {lang} = useLang(), bn = lang === "bn";
   const [params, setParams] = useSearchParams();
   const id = params.get("craft");
@@ -40,6 +40,12 @@ export function CraftCheckout({product, children}: {product: Product; children: 
   const selectedCount = Object.values(designs).reduce((total, count) => total + count, 0);
   const capacity = variant?.pieces_per_set;
   const suppliedCount = selectedCount + (hasArtwork || retainedArtwork ? 1 : 0);
+  const perPiece = craft?.pricing_mode === "per_piece";
+  const extras = config.fields.filter(field => field.type === "select").flatMap(field => {
+    const option = field.options.find(option => option.label === answers[field.id]);
+    return option ? [String(option.extra_price)] : [];
+  });
+  const pricing = variant ? craftPrice(variant.price, perPiece ? suppliedCount : 1, perPiece ? capacity || 0 : 1, quantity, extras) : null;
   const validCount = !craft?.designs.length && !craft?.allow_artwork || suppliedCount > 0;
   function changeDesign(code: string, count: number) {
     if (busy) return;
@@ -86,10 +92,10 @@ export function CraftCheckout({product, children}: {product: Product; children: 
   }
   useEffect(() => {setSelection(null); setHasArtwork(false); void refresh(); return () => controller.current?.abort();}, [id]);
   const matching = selection && selection.product_id === product.id && selection.variant_id === variant?.id && selection.quantity === quantity;
-  if (id && matching && selection.ready) return <><div className="container craft-checkout-status"><p>{bn ? "কাস্টম পণ্যের নির্বাচন নিশ্চিত করা হয়েছে।" : "Custom product selection confirmed."}</p>{selection.summary?.map((text,i)=><p key={i}>{text}</p>)}<button className="button secondary" onClick={editSelection}>{bn ? "নির্বাচন পরিবর্তন করুন" : "Change selection"}</button></div>{children}</>;
+  if (id && matching && selection.ready) return <><div className="container craft-checkout-status"><p>{bn ? "কাস্টম পণ্যের নির্বাচন নিশ্চিত করা হয়েছে।" : "Custom product selection confirmed."}</p>{selection.summary?.map((text,i)=><p key={i}>{text}</p>)}<button className="button secondary" onClick={editSelection}>{bn ? "নির্বাচন পরিবর্তন করুন" : "Change selection"}</button></div>{children(selection.unit_price || undefined)}</>;
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!variant || busy || !validCount || !checked) return;
+    if (!variant || busy || !validCount || !checked || !pricing) return;
     const fields = new FormData(event.currentTarget);
     controller.current?.abort();
     const signal = (controller.current = new AbortController()).signal;
@@ -126,6 +132,7 @@ export function CraftCheckout({product, children}: {product: Product; children: 
   return <main id="main" className="container section craft-checkout"><h1>{bn ? "কাস্টম পণ্যের বিবরণ" : "Custom product details"}</h1><p>{product.name} · {variant?.name} × {quantity}</p>
     {variant?.pieces_per_set && <p>{variant.pieces_per_set} {bn ? "পিস প্রতি সেট" : "pieces per set"} · {variant.size} {variant.color}</p>}
     {craft?.production_days && <p>{bn ? "তৈরির সময়" : "Production time"}: {craft.production_days}{craft.production_days_to ? `–${craft.production_days_to}` : ""} {bn ? "দিন" : "days"}</p>}
+    <div className="panel"><div className="summary-line" role="status" aria-live="polite" data-testid="craft-product-total"><span>{bn ? "পণ্যের মোট দাম" : "Product total"}</span><strong>{pricing ? money(pricing.total, product.currency) : (bn ? "দাম পাওয়া যায়নি" : "Price unavailable")}</strong></div><small>{bn ? "ডেলিভারি চার্জ checkout-এ যোগ হবে। নিজের artwork বা ছবি দিলে চূড়ান্ত দাম বিক্রেতা যাচাই করবেন।" : "Shipping is calculated at checkout. Customer artwork or images require seller pricing review."}</small></div>
     {error && <p role="alert">{error}</p>}
     {id ? <section className="panel" aria-live="polite">
       <h2>{bn ? "বিক্রেতার রিভিউ ও প্রিভিউ" : "Seller review and preview"}</h2>
@@ -136,7 +143,7 @@ export function CraftCheckout({product, children}: {product: Product; children: 
       <button className="button secondary" disabled={busy} onClick={refresh}>{bn ? "আপডেট দেখুন" : "Check for updates"}</button>
       <button className="button secondary" disabled={busy} onClick={editSelection}>{bn ? "নির্বাচন পরিবর্তন করুন" : "Change selection"}</button>
     </section> : <form className="panel" onSubmit={submit} onChange={event => {if (!(event.target instanceof HTMLInputElement) || event.target.name !== "selection_confirm") setChecked(false);}}>
-      <p>{bn ? "প্যাকেজ ও নির্বাচন মিলিয়ে জমা দিন। পরিবর্তন করলে আগের রিভিউ ও অনুমোদন প্রযোজ্য হবে না।" : "Check your package and choices before submitting. A new selection needs a new seller review and approval."}</p>
+      <p>{bn ? "প্যাকেজ ও নির্বাচন মিলিয়ে জমা দিন। পরিবর্তন করলে আবার নিশ্চিত করতে হবে। নিজের artwork ও প্রয়োজনীয় print preview বিক্রেতাকে যাচাই করতে হবে।" : "Check your package and choices before submitting. Changes need a new confirmation; customer artwork and required previews need seller review."}</p>
       {product.variants.length > 1 && <label className="field">{bn ? "প্যাকেজ" : "Package"}<select aria-label={bn ? "প্যাকেজ" : "Package"} value={variant?.id || ""} disabled={busy} onChange={event => changePackage(event.target.value)}>{product.variants.map(option => <option key={option.id} value={option.id} disabled={option.stock < quantity}>{option.name} · {option.pieces_per_set ? `${option.pieces_per_set} ${bn ? "পিস" : "pieces"} · ` : ""}{option.size} {option.color} · ৳{option.price}{option.stock < quantity ? (bn ? " · স্টক নেই" : " · Unavailable") : ""}</option>)}</select></label>}
       {!!craft?.designs.length && <fieldset className="craft-picker" disabled={busy}><legend>{bn ? "ডিজাইন নির্বাচন" : "Choose designs"}</legend>
         <div className="craft-selection-count" role="status" aria-live="polite"><strong>{bn ? "নির্বাচিত" : "Selected"}: {suppliedCount}</strong><span>{capacity ? (bn ? `প্যাকেজে প্রতি সেটে ${capacity} পিস আছে` : `Package includes ${capacity} pieces per set`) : (bn ? "প্রতি সেটের জন্য ডিজাইন বেছে নিন" : "Choose designs for each set")}</span></div>
@@ -157,7 +164,7 @@ export function CraftCheckout({product, children}: {product: Product; children: 
             {count > 0 && <div className="craft-design-quantity"><button type="button" aria-label={`${bn ? "কমান" : "Decrease"} ${label}`} onClick={() => changeDesign(design.code, count - 1)}>−</button><output aria-label={`${label} ${bn ? "পরিমাণ" : "quantity"}`}>{count}</output><button type="button" aria-label={`${bn ? "বাড়ান" : "Increase"} ${label}`} disabled={count >= 100} onClick={() => changeDesign(design.code, count + 1)}>+</button></div>}
           </div>;
         })}</div>
-        {capacity && suppliedCount > 0 && suppliedCount !== capacity && <p className="craft-picker-hint" role="status">{bn ? `আপনার নির্বাচন প্রতি সেটে ${suppliedCount} পিস, প্যাকেজে ${capacity} পিস আছে। অর্ডারের আগে বিক্রেতাকে প্যাকেজ ও চূড়ান্ত দাম যাচাই করতে হবে।` : `You selected ${suppliedCount} pieces per set; this package includes ${capacity}. The seller must confirm the package and final price before ordering.`}</p>}
+        {capacity && suppliedCount > 0 && suppliedCount !== capacity && <p className="craft-picker-hint" role="status">{perPiece ? (bn ? "নির্বাচিত পিস অনুযায়ী দাম স্বয়ংক্রিয়ভাবে হিসাব হয়েছে। অর্ডারের আগে এই custom package বিক্রেতাকে যাচাই করতে হবে।" : "The price updates automatically for your selected pieces. The seller must verify this custom package before ordering.") : (bn ? `আপনার নির্বাচন প্রতি সেটে ${suppliedCount} পিস, প্যাকেজে ${capacity} পিস আছে। অর্ডারের আগে বিক্রেতাকে প্যাকেজ ও চূড়ান্ত দাম যাচাই করতে হবে।` : `You selected ${suppliedCount} pieces per set; this package includes ${capacity}. The seller must confirm the package and final price before ordering.`)}</p>}
       </fieldset>}
       {config.fields.map(f => <div key={f.id}><label className="field">{f.label}<small>{f.question}</small>{f.type === "select" ? <select name={`answer:${f.id}`} disabled={busy} required={f.required} value={answers[f.id] || ""} onChange={event => setAnswers({...answers, [f.id]: event.target.value})}><option value="">{bn ? "বেছে নিন" : "Choose an option"}</option>{f.options.map(o => <option key={o.label} value={o.label}>{o.label}{Number(o.extra_price) > 0 ? ` (+${o.extra_price})` : ""}</option>)}</select> : f.type === "image" ? <input name={`answer:${f.id}`} type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} required={f.required && !retainedImages[f.id]}/> : <input name={`answer:${f.id}`} type={f.type} disabled={busy} required={f.required} min={f.minimum} max={f.maximum} maxLength={2000} step={f.type === "number" ? "any" : undefined} value={answers[f.id] || ""} onChange={event => setAnswers({...answers, [f.id]: event.target.value})}/>}</label>
         {retainedImages[f.id] && <div className="craft-retained-image"><span>{bn ? "আগের ছবি সংরক্ষিত আছে। নতুন ছবি দিলে এটি বদলাবে।" : "Your saved image is kept. A new upload replaces it."}</span><button type="button" className="button secondary" disabled={busy} onClick={() => {setChecked(false); setRetainedImages(previous => Object.fromEntries(Object.entries(previous).filter(([key]) => key !== f.id)));}}>{bn ? "আগের ছবি বাদ দিন" : "Remove saved image"}</button></div>}
@@ -165,7 +172,7 @@ export function CraftCheckout({product, children}: {product: Product; children: 
       {craft?.allow_artwork && <div><label className="field">{bn ? "আপনার artwork (ঐচ্ছিক)" : "Your artwork (optional)"}<input type="file" name="artwork" accept="image/jpeg,image/png,image/webp" disabled={busy} onChange={event => setHasArtwork(!!event.target.files?.length)}/></label>{retainedArtwork && <div className="craft-retained-image"><span>{bn ? "আগের artwork সংরক্ষিত আছে। নতুন ছবি দিলে এটি বদলাবে।" : "Your saved artwork is kept. A new upload replaces it."}</span><button type="button" className="button secondary" disabled={busy} onClick={() => {setChecked(false); setRetainedArtwork(null);}}>{bn ? "আগের artwork বাদ দিন" : "Remove saved artwork"}</button></div>}</div>}
       <small>{bn ? "সব ছবি মিলিয়ে সর্বোচ্চ ১ MB।" : "All uploaded images together: maximum 1 MB."}</small>
       <label className="check-field"><input type="checkbox" name="selection_confirm" checked={checked} onChange={event => setChecked(event.target.checked)} required disabled={busy}/>{bn ? "প্যাকেজ ও আমার নির্বাচন মিলিয়ে নিশ্চিত করছি।" : "I checked and confirm this package and my selection."}</label>
-      <button className="button primary" disabled={busy || !variant || variant.stock < quantity || !validCount || !checked}>{busy ? (bn ? "জমা হচ্ছে…" : "Submitting…") : (bn ? "নির্বাচন জমা দিন" : "Submit selection")}</button>
+      <button className="button primary" disabled={busy || !variant || variant.stock < quantity || !validCount || !checked || !pricing}>{busy ? (bn ? "জমা হচ্ছে…" : "Submitting…") : (bn ? "নির্বাচন জমা দিন" : "Submit selection")}</button>
     </form>}
     <Link className="back-link" to={`/products/${product.id}`}>{bn ? "পণ্যে ফিরে যান" : "Back to product"}</Link>
   </main>;

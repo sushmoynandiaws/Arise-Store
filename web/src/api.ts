@@ -75,6 +75,21 @@ export function checkoutTotal(price: string, quantity: number): string | null {
   const total = (Number(whole) * 100 + Number(fraction.padEnd(2, "0"))) * quantity;
   return Number.isSafeInteger(total) ? (total / 100).toFixed(2) : null;
 }
+export function craftPrice(price: string, pieces: number, packagePieces: number, quantity: number, extras: string[] = []): {unit_price: string; total: string} | null {
+  if (checkoutTotal(price, quantity) === null || !Number.isInteger(pieces) || pieces < 0 || pieces > 60000 ||
+      !Number.isInteger(packagePieces) || packagePieces < 1 || packagePieces > 1000 || extras.some(value => checkoutTotal(value, 1) === null)) return null;
+  const minor = (value: string) => {
+    const [whole, fraction = ""] = value.split(".");
+    return BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+  };
+  const divisor = BigInt(packagePieces);
+  // Round once per set, half up, then multiply by the order quantity like the server.
+  const unit = pieces === 0 ? 0n : (2n * minor(price) * BigInt(pieces) + divisor) / (2n * divisor) + extras.reduce((sum, value) => sum + minor(value), 0n);
+  const total = unit * BigInt(quantity);
+  if (total > BigInt(Number.MAX_SAFE_INTEGER)) return null;
+  const format = (value: bigint) => `${value / 100n}.${String(value % 100n).padStart(2, "0")}`;
+  return {unit_price: format(unit), total: format(total)};
+}
 export function checkoutQuantity(value: string | null): number {
   const quantity = Number(value);
   return Number.isInteger(quantity) && quantity >= 1 && quantity <= 100 ? quantity : 1;

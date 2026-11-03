@@ -8,7 +8,7 @@ const product = {id:"canvas",shop_id:shop.id,name:"Custom canvas",category:"Art"
 
 test("mobile custom selection waits for seller proof, approves it and passes source draft to checkout", async ({page}) => {
   let approved = false, saved: any, quote: any;
-  const selection = () => ({id:"custom-draft",product_id:product.id,variant_id:"small",quantity:1,ready:approved,reason:approved?"":"Merchant preview and customer proof approval are required",
+  const selection = () => ({id:"custom-draft",product_id:product.id,variant_id:"small",quantity:1,unit_price:approved?"725.50":null,ready:approved,reason:approved?"":"Merchant preview and customer proof approval are required",
     proof:{id:"proof-1",url:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'/%3E",revision:"b".repeat(64),approved}});
   await page.addInitScript(() => localStorage.setItem("arise_lang","en"));
   await page.route("**/api/**", async route => {
@@ -37,6 +37,7 @@ test("mobile custom selection waits for seller proof, approves it and passes sou
   expect(saved.selection).toEqual([{code:"D1",qty:1}]);
   await expect(page.getByRole("button",{name:"Review order",exact:true})).toHaveCount(0);
   await page.getByRole("button",{name:"I approve this preview",exact:true}).click();
+  await expect(page.locator(".summary-line").filter({hasText:"Price per item"})).toContainText("725.50");
   await page.getByLabel("Full name",{exact:true}).fill("Craft buyer");
   await page.getByLabel("Phone number",{exact:true}).fill("01712345678");
   await page.getByLabel("Full delivery address",{exact:true}).fill("House 12 Road 4 Mirpur");
@@ -55,7 +56,8 @@ test("gallery allows multiple designs and select all beyond a one-piece package,
   const gallery = {...product, variants: [
     {id:"single",name:"Canvas Single",price:"50",stock:4,pieces_per_set:1,size:"8×6 inch",color:"Canvas board"},
     {id:"triple",name:"Canvas Triple",price:"150",stock:4,pieces_per_set:3,size:"8×6 inch",color:"Canvas board"},
-  ], custom_order:{...product.custom_order,fields:[],craft:{...product.custom_order.craft,allow_mixing:true,allow_artwork:false,designs:[
+    {id:"large",name:"Large Triple",price:"300",stock:4,pieces_per_set:3,size:"12×8 inch",color:"Canvas board"},
+  ], custom_order:{...product.custom_order,fields:[{id:"finish",label:"Finish",question:"Choose a finish",type:"select",required:false,options:[{label:"Gloss",extra_price:"25.00"}]}],craft:{...product.custom_order.craft,pricing_mode:"per_piece",allow_mixing:true,allow_artwork:false,designs:[
     {code:"messi",label:"Messi 10",image_url:image}, {code:"neymar",label:"Neymar 11",image_url:image},
     {code:"generated",label:"Messenger_creation_84853978-C513-45FF-ACBE-BAFB0A6DFF83",image_url:image},
     ...Array.from({length:8},(_,index) => ({code:`extra-${index}`,label:`Gallery choice ${index + 4}`,image_url:image})),
@@ -74,10 +76,13 @@ test("gallery allows multiple designs and select all beyond a one-piece package,
   await page.setViewportSize({width:375,height:812});
   await page.goto("/checkout/canvas?variant=triple&quantity=2");
   await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 0.*Package includes 3/);
+  await expect(page.getByTestId("craft-product-total")).toContainText("0.00");
   await expect(page.getByText("Messenger_creation",{exact:false})).toHaveCount(0);
   await expect(page.getByRole("button",{name:"Design 3",exact:true})).toBeVisible();
   await page.getByRole("button",{name:"Messi 10",exact:true}).click();
+  await expect(page.getByTestId("craft-product-total")).toContainText("100.00");
   await page.getByRole("button",{name:"Increase Messi 10",exact:true}).click();
+  await expect(page.getByTestId("craft-product-total")).toContainText("200.00");
   await page.getByRole("button",{name:"Neymar 11",exact:true}).click();
   await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 3.*Package includes 3/);
   await page.getByRole("checkbox").check();
@@ -86,10 +91,15 @@ test("gallery allows multiple designs and select all beyond a one-piece package,
   await expect(page.getByRole("checkbox")).not.toBeChecked();
   await expect(page.getByRole("button",{name:"Submit selection",exact:true})).toBeDisabled();
   await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 3.*Package includes 1/);
-  await expect(page.getByText(/The seller must confirm the package and final price/)).toBeVisible();
+  await expect(page.getByTestId("craft-product-total")).toContainText("300.00");
+  await expect(page.getByText(/The price updates automatically for your selected pieces\./)).toBeVisible();
   await page.getByRole("checkbox").check();
   await expect(page.getByRole("button",{name:"Submit selection",exact:true})).toBeEnabled();
+  await page.getByLabel("Package",{exact:true}).selectOption("large");
+  await expect(page.getByTestId("craft-product-total")).toContainText("600.00");
   await page.getByLabel("Package",{exact:true}).selectOption("triple");
+  await page.getByLabel("Finish").selectOption("Gloss");
+  await expect(page.getByTestId("craft-product-total")).toContainText("350.00");
   await page.getByRole("checkbox").check();
   await page.getByRole("button",{name:"Submit selection",exact:true}).click();
   await expect(page.getByRole("heading",{name:"Seller review and preview"})).toBeVisible();
@@ -100,6 +110,7 @@ test("gallery allows multiple designs and select all beyond a one-piece package,
   await page.getByRole("button",{name:"Change selection",exact:true}).click();
   await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 3.*Package includes 3/);
   await page.getByRole("button",{name:"Neymar 11",exact:true}).click();
+  await expect(page.getByTestId("craft-product-total")).toContainText("250.00");
   await page.getByRole("button",{name:"Design 3",exact:true}).click();
   await expect(page.getByRole("button",{name:"Design 3",exact:true})).toHaveAttribute("aria-pressed","true");
   await page.getByLabel("Package",{exact:true}).selectOption("single");
@@ -107,14 +118,17 @@ test("gallery allows multiple designs and select all beyond a one-piece package,
   await page.getByRole("button",{name:"Select all",exact:true}).click();
   await expect(page.getByRole("checkbox")).not.toBeChecked();
   await expect(page.locator(".craft-selection-count")).toHaveText(/Selected: 12.*Package includes 1/);
+  await expect(page.getByTestId("craft-product-total")).toContainText("1,250.00");
   await expect(page.locator('.craft-design-choice[aria-pressed="true"]')).toHaveCount(11);
   await expect(page.getByLabel("Messi 10 quantity",{exact:true})).toHaveText("2");
   await expect(page.getByRole("button",{name:"Select all",exact:true})).toBeDisabled();
   await page.getByRole("button",{name:"Clear designs",exact:true}).click();
   await expect(page.locator('.craft-design-choice[aria-pressed="true"]')).toHaveCount(0);
+  await expect(page.getByTestId("craft-product-total")).toContainText("0.00");
   await page.getByRole("checkbox").check();
   await expect(page.getByRole("button",{name:"Submit selection",exact:true})).toBeDisabled();
   await page.getByRole("button",{name:"Select all",exact:true}).click();
+  await expect(page.getByTestId("craft-product-total")).toContainText("1,150.00");
   await page.getByRole("checkbox").check();
   await page.getByRole("button",{name:"Submit selection",exact:true}).click();
   await expect(page.getByRole("heading",{name:"Seller review and preview"})).toBeVisible();

@@ -9,7 +9,7 @@ export type Variant = {
 };
 export type Product = {
   size_chart?: string;
-  custom_order?: {revision: string; fields: {id: string; label: string; question: string; type: "text" | "number" | "date" | "select" | "image"; required: boolean; minimum?: number; maximum?: number; options: {label: string; extra_price: string}[]}[]; craft?: {enabled: boolean; allow_mixing: boolean; allow_artwork: boolean; proof_required: boolean; production_days?: number; production_days_to?: number; designs: {code: string; label: string; image_url?: string}[]} | null} | null;
+  custom_order?: {revision: string; fields: {id: string; label: string; question: string; type: "text" | "number" | "date" | "select" | "image"; required: boolean; minimum?: number; maximum?: number; options: {label: string; extra_price: string}[]}[]; craft?: {enabled: boolean; pricing_mode?: "per_piece" | "per_set"; allow_mixing: boolean; allow_artwork: boolean; proof_required: boolean; production_days?: number; production_days_to?: number; designs: {code: string; label: string; image_url?: string}[]} | null} | null;
   url_slug?: string;
   id: string;
   shop_id: string;
