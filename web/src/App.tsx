@@ -53,6 +53,7 @@ import {
   LockKeyhole,
   LoaderCircle,
   Download,
+  Printer,
   Flag,
   Plus,
   LogOut,
@@ -2333,6 +2334,97 @@ export function extractDownloadLinks(content: string): { url: string; label: str
   });
 }
 
+export function extractCredentials(content: string): {
+  username?: string;
+  password?: string;
+  key?: string;
+} {
+  const result: { username?: string; password?: string; key?: string } = {};
+  if (!content) return result;
+
+  const lines = content.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+
+  for (const line of lines) {
+    if (/^https?:\/\//i.test(line)) continue;
+
+    // Pattern 1: user@domain.com:password or username:password combo
+    const combo = line.match(/^([^\s:]+@[^\s:]+|[a-zA-Z0-9_.-]{3,}):([^\s:]+)$/);
+    if (
+      combo &&
+      !result.username &&
+      !result.password &&
+      !/^(https?|ftp|note|date|order|status|ref|tel|phone)$/i.test(combo[1])
+    ) {
+      result.username = combo[1];
+      result.password = combo[2];
+      continue;
+    }
+
+    // Pattern 2: Key-value labeled formats
+    const userMatch = line.match(/^(?:email|e-mail|username|user|ইমেইল|ইউজারনেম|ইউজার|লগইন)\s*[:=]\s*(.+)$/i);
+    if (userMatch && !result.username) {
+      result.username = userMatch[1].trim();
+      continue;
+    }
+
+    const passMatch = line.match(/^(?:password|pass|pin|pwd|পাসওয়ার্ড|পাস|পিন)\s*[:=]\s*(.+)$/i);
+    if (passMatch && !result.password) {
+      result.password = passMatch[1].trim();
+      continue;
+    }
+
+    const keyMatch = line.match(/^(?:license|license[-_ ]key|key|code|serial|লাইসেন্স|অ্যাক্টিভেশন)\s*[:=]\s*(.+)$/i);
+    if (keyMatch && !result.key) {
+      result.key = keyMatch[1].trim();
+      continue;
+    }
+  }
+
+  return result;
+}
+
+export function downloadCredentialsTxt(
+  ref: string,
+  items: { item: number; content: string; name?: string; variant?: string }[],
+  shopName: string,
+  lang = "en",
+) {
+  const dateStr = new Date().toLocaleString(lang === "bn" ? "bn-BD" : "en-US");
+  const banner = [
+    "============================================================",
+    "  ARISE DIGITAL STORE - DIGITAL DELIVERY RECEIPT",
+    `  Order Ref: ${ref}`,
+    `  Shop:      ${shopName}`,
+    `  Date:      ${dateStr}`,
+    "============================================================",
+    "",
+    lang === "bn"
+      ? "আপনার পাসওয়ার্ড, লাইসেন্স কী ও এক্সেস তথ্য সবসময় নিরাপদ রাখুন।"
+      : "KEEP YOUR PASSWORDS, LICENSE KEYS AND ACCESS DETAILS PRIVATE.",
+    "",
+    ...items.flatMap((item) => [
+      `--- [Item ${item.item}${item.name ? ` : ${item.name}` : ""}${item.variant ? ` (${item.variant})` : ""}] ---`,
+      item.content,
+      "",
+    ]),
+    "============================================================",
+    lang === "bn"
+      ? "Arise Store থেকে কেনাকাটা করার জন্য ধন্যবাদ।"
+      : "Thank you for your purchase via Arise Store.",
+    "============================================================",
+  ].join("\r\n");
+
+  const blob = new Blob([banner], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${ref}-credentials.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function WhatsAppFloatingButton({
   shop,
   product,
@@ -3563,6 +3655,63 @@ function PurchasePage() {
   const paymentDeadline = order?.payment ? Date.parse(order.payment.expires_at) : NaN;
   const paymentOpen = !!order && ["unpaid", "pending_verification", "review_required"].includes(order.payment_status);
   const ticking = paymentOpen && order?.delivery_status !== "cancelled" && paymentDeadline > now;
+
+  const prevOrderState = useRef<{ paid: boolean; ready: boolean; initialized: boolean }>({
+    paid: false,
+    ready: false,
+    initialized: false,
+  });
+
+  useEffect(() => {
+    if (!order) return;
+    const isPaid = order.payment_status === "paid";
+    const isReady = Boolean(order.ready || order.delivery_status === "delivered");
+
+    if (prevOrderState.current.initialized) {
+      const wasPending = !prevOrderState.current.paid || !prevOrderState.current.ready;
+      if (wasPending && isPaid && isReady) {
+        // 1. Browser Notification
+        if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+          try {
+            new Notification(
+              lang === "bn" ? "✅ আপনার অর্ডার প্রস্তুত!" : "✅ Your order is ready!",
+              {
+                body: lang === "bn"
+                  ? `অর্ডার ${order.ref}: পেমেন্ট ভেরিফাই হয়েছে এবং আপনার ডেলিভারি প্রস্তুত!`
+                  : `Order ${order.ref}: Payment confirmed and your delivery is ready!`,
+                icon: "/favicon.ico",
+              },
+            );
+          } catch {
+            /* ignore notification error */
+          }
+        }
+
+        // 2. Live Tab Title alert
+        const alertTitle = lang === "bn"
+          ? `(1) ✅ ডেলিভারি সম্পন্ন! | ${order.ref}`
+          : `(1) ✅ Order Ready! | ${order.ref}`;
+        const baseTitle = document.title;
+        let toggle = false;
+        const titleInterval = window.setInterval(() => {
+          document.title = toggle ? alertTitle : (lang === "bn" ? "✅ অর্ডার প্রস্তুত!" : "✅ Order Ready!");
+          toggle = !toggle;
+        }, 1200);
+
+        const stopAlert = () => {
+          window.clearInterval(titleInterval);
+          document.title = baseTitle;
+          window.removeEventListener("focus", stopAlert);
+          document.removeEventListener("visibilitychange", stopAlert);
+        };
+
+        window.addEventListener("focus", stopAlert);
+        document.addEventListener("visibilitychange", stopAlert);
+      }
+    }
+
+    prevOrderState.current = { paid: isPaid, ready: isReady, initialized: true };
+  }, [order?.payment_status, order?.ready, order?.delivery_status, order?.ref, lang]);
   useEffect(() => {
     if (!ticking) return;
     const tick = () => setNow(Date.now());
@@ -3634,6 +3783,30 @@ function PurchasePage() {
         <h1>{message.title}</h1>
         <p>{message.description}</p>
         {paid && !order.ready && !cancelled && order.delivery_estimate && <p className="preserve-lines">{order.delivery_estimate}</p>}
+        <div className="purchase-heading-actions no-print">
+          <button
+            type="button"
+            className="button secondary small print-receipt-btn"
+            onClick={() => window.print()}
+            aria-label={lang === "bn" ? "রিসিট প্রিন্ট বা PDF হিসেবে সংরক্ষণ করুন" : "Download / Print Receipt"}
+          >
+            <Printer size={15} />
+            <span>{lang === "bn" ? "রিসিট প্রিন্ট / PDF" : "Download / Print Receipt"}</span>
+          </button>
+        </div>
+      </div>
+      <div className="print-only receipt-print-header">
+        <div className="receipt-print-brand">
+          <h2>{order.shop.name}</h2>
+          <p>Arise Digital Store · {lang === "bn" ? "অফিসিয়াল অর্ডার রিসিট" : "Official Order Receipt"}</p>
+        </div>
+        <div className="receipt-print-meta">
+          <p><strong>{lang === "bn" ? "অর্ডার আইডি:" : "Order Ref:"}</strong> {order.ref}</p>
+          <p><strong>{lang === "bn" ? "তারিখ:" : "Date:"}</strong> {new Date(order.created_at || Date.now()).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
+          <p><strong>{lang === "bn" ? "পেমেন্ট:" : "Payment:"}</strong> {paymentLabel(order.payment_status, lang)}</p>
+          <p><strong>{lang === "bn" ? "ডেলিভারি:" : "Delivery:"}</strong> {deliveryLabel(order.delivery_status, lang)}</p>
+          {order.payment?.trx_id && <p><strong>TrxID:</strong> {order.payment.trx_id}</p>}
+        </div>
       </div>
       {error && <ErrorBox message={error} />}
       <div className="purchase-grid">
@@ -3731,6 +3904,9 @@ function PurchasePage() {
                 className="proof-form"
                 onSubmit={async (e) => {
                   e.preventDefault();
+                  if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") {
+                    Notification.requestPermission().catch(() => {});
+                  }
                   setBusy(true);
                   setError("");
                   try {
@@ -3824,14 +4000,47 @@ function PurchasePage() {
                 </div>
                 {items ? (
                   <div className="private-items">
+                    <div className="private-items-toolbar no-print">
+                      <button
+                        type="button"
+                        className="button secondary small download-txt-btn"
+                        onClick={() => downloadCredentialsTxt(order.ref, items, order.shop.name, lang)}
+                      >
+                        <Download size={14} />
+                        <span>{lang === "bn" ? "ডেলিভারি ফাইল (.txt) ডাউনলোড" : "Download details (.txt)"}</span>
+                      </button>
+                    </div>
                     {items.map((item) => {
                       const downloadLinks = extractDownloadLinks(item.content);
+                      const creds = extractCredentials(item.content);
                       return (
                         <div key={item.item} className="private-item">
                           <div className="private-item-header">
                             <strong>{lang === "bn" ? `আইটেম ${item.item}` : `Item ${item.item}`}{item.name ? ` · ${item.name}${item.variant ? ` — ${item.variant}` : ""}` : ""}</strong>
                             <CopyButton value={item.content} />
                           </div>
+                          {(creds.username || creds.password || creds.key) && (
+                            <div className="credential-actions-bar no-print">
+                              {creds.username && (
+                                <CopyButton
+                                  value={creds.username}
+                                  label={lang === "bn" ? "ইউজারনেম কপি" : "Copy Username"}
+                                />
+                              )}
+                              {creds.password && (
+                                <CopyButton
+                                  value={creds.password}
+                                  label={lang === "bn" ? "পাসওয়ার্ড কপি" : "Copy Password"}
+                                />
+                              )}
+                              {creds.key && (
+                                <CopyButton
+                                  value={creds.key}
+                                  label={lang === "bn" ? "কী / কোড কপি" : "Copy Key"}
+                                />
+                              )}
+                            </div>
+                          )}
                           {downloadLinks.length > 0 && (
                             <div className="private-item-downloads">
                               {downloadLinks.map((dl, idx) => (

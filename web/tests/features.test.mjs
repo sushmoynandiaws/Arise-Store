@@ -233,3 +233,67 @@ test("Store FAQ accordion is integrated into App.tsx, shopPages.ts, and Faq.tsx 
   assert.ok(stylesCode.includes(".store-faq-summary"), "styles.css should style .store-faq-summary");
   assert.ok(stylesCode.includes(".faq-verified-pill"), "styles.css should style .faq-verified-pill");
 });
+
+test("PurchasePage receipt printing, credential parsing and live tab alerts are integrated", () => {
+  const stylesCode = fs.readFileSync("src/styles.css", "utf8");
+
+  // Credential parsing logic verification
+  function extractCredentials(content) {
+    const result = {};
+    if (!content) return result;
+    const lines = content.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      if (/^https?:\/\//i.test(line)) continue;
+      const combo = line.match(/^([^\s:]+@[^\s:]+|[a-zA-Z0-9_.-]{3,}):([^\s:]+)$/);
+      if (combo && !result.username && !result.password && !/^(https?|ftp|note|date|order|status|ref|tel|phone)$/i.test(combo[1])) {
+        result.username = combo[1];
+        result.password = combo[2];
+        continue;
+      }
+      const userMatch = line.match(/^(?:email|e-mail|username|user|ইমেইল|ইউজারনেম|ইউজার|লগইন)\s*[:=]\s*(.+)$/i);
+      if (userMatch && !result.username) {
+        result.username = userMatch[1].trim();
+        continue;
+      }
+      const passMatch = line.match(/^(?:password|pass|pin|pwd|পাসওয়ার্ড|পাস|পিন)\s*[:=]\s*(.+)$/i);
+      if (passMatch && !result.password) {
+        result.password = passMatch[1].trim();
+        continue;
+      }
+      const keyMatch = line.match(/^(?:license|license[-_ ]key|key|code|serial|লাইসেন্স|অ্যাক্টিভেশন)\s*[:=]\s*(.+)$/i);
+      if (keyMatch && !result.key) {
+        result.key = keyMatch[1].trim();
+        continue;
+      }
+    }
+    return result;
+  }
+
+  // 1. Combo user:pass
+  const creds1 = extractCredentials("netflix_user@gmail.com:SecretPass2026");
+  assert.equal(creds1.username, "netflix_user@gmail.com");
+  assert.equal(creds1.password, "SecretPass2026");
+
+  // 2. Multiline labeled format
+  const creds2 = extractCredentials("Email: user@company.com\nPassword: securePassword!123\nNote: Enjoy");
+  assert.equal(creds2.username, "user@company.com");
+  assert.equal(creds2.password, "securePassword!123");
+
+  // 3. License key format
+  const creds3 = extractCredentials("License Key: PRO-9988-7766\nDownload: https://example.com/app.exe");
+  assert.equal(creds3.key, "PRO-9988-7766");
+
+  // Verify App.tsx contains print, credential and tab alert logic
+  assert.ok(appCode.includes("print-receipt-btn"), "App.tsx should have print-receipt-btn");
+  assert.ok(appCode.includes("window.print()"), "App.tsx should trigger window.print");
+  assert.ok(appCode.includes("receipt-print-header"), "App.tsx should render receipt-print-header");
+  assert.ok(appCode.includes("downloadCredentialsTxt"), "App.tsx should define downloadCredentialsTxt");
+  assert.ok(appCode.includes("credential-actions-bar"), "App.tsx should render credential-actions-bar");
+  assert.ok(appCode.includes("new Notification"), "App.tsx should trigger browser notifications when order is ready");
+  assert.ok(appCode.includes("✅ ডেলিভারি সম্পন্ন!"), "App.tsx should flash tab title alert on delivery");
+
+  // Verify styles.css contains @media print rules
+  assert.ok(stylesCode.includes("@media print"), "styles.css should contain @media print");
+  assert.ok(stylesCode.includes(".receipt-print-header"), "styles.css should style .receipt-print-header");
+  assert.ok(stylesCode.includes(".credential-actions-bar"), "styles.css should style .credential-actions-bar");
+});

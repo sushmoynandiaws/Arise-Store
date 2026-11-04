@@ -3793,3 +3793,176 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
 .purchase-status-filters { margin-block: 16px 20px; }
 .bag-line-actions .text-link { display: inline-flex; align-items: center; min-height: 44px; padding-inline: 8px; }
 .sticky-ad-close-btn { min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+
+/* ========================================================
+   ORDER RECEIPT, CREDENTIAL ACTIONS & PRINT STYLES
+   ======================================================== */
+.purchase-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.print-receipt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+}
+
+.credential-actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.credential-actions-bar button {
+  font-size: var(--text-small);
+  padding: 6px 12px;
+  min-height: 38px;
+  border-radius: var(--radius-pill);
+}
+
+.private-items-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.download-txt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+  }
+
+  header,
+  nav,
+  .site-top-bar,
+  .site-sub-nav,
+  .dark-theme-footer,
+  .skip-link,
+  .back-link,
+  .whatsapp-floating-btn,
+  .proof-form,
+  .purchase-review,
+  .purchase-support,
+  .purchase-hero-icon,
+  .no-print,
+  button,
+  .download-action-btn,
+  .merchant-alert,
+  .personal-alert,
+  .action-pill-highlight,
+  .sticky-ad-container {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .receipt-print-header {
+    border-bottom: 2px solid #111;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .receipt-print-brand h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #000;
+  }
+
+  .receipt-print-brand p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: #555;
+  }
+
+  .receipt-print-meta {
+    text-align: right;
+    font-size: 12px;
+  }
+
+  .receipt-print-meta p {
+    margin: 2px 0;
+    color: #222;
+  }
+
+  .purchase-page {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .purchase-page-heading h1 {
+    font-size: 18px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .purchase-grid {
+    display: block !important;
+  }
+
+  .purchase-col-summary,
+  .purchase-col-action {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .panel.purchase-panel {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+    background: #ffffff !important;
+    padding: 14px !important;
+    margin-bottom: 16px !important;
+    break-inside: avoid;
+  }
+
+  .order-status-grid,
+  .buyer-summary-grid {
+    background: #f8f8f8 !important;
+    border: 1px solid #eee !important;
+    padding: 10px !important;
+  }
+
+  .private-item {
+    border: 1px solid #ccc !important;
+    background: #ffffff !important;
+    break-inside: avoid;
+  }
+
+  .private-item pre {
+    background: #f7f7f7 !important;
+    color: #111 !important;
+    border: 1px solid #e0e0e0 !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+  }
+}

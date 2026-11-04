@@ -53,6 +53,7 @@ import MegaphoneRaw from "lucide-react/dist/esm/icons/megaphone.js";
 import EyeRaw from "lucide-react/dist/esm/icons/eye.js";
 import TrendingUpRaw from "lucide-react/dist/esm/icons/trending-up.js";
 import HelpCircleRaw from "lucide-react/dist/esm/icons/help-circle.js";
+import PrinterRaw from "lucide-react/dist/esm/icons/printer.js";
 
 export const ArrowUp = ArrowUpRaw as LucideIcon;
 export const ArrowUpRight = ArrowUpRightRaw as LucideIcon;
@@ -105,3 +106,4 @@ export const Megaphone = MegaphoneRaw as LucideIcon;
 export const Eye = EyeRaw as LucideIcon;
 export const TrendingUp = TrendingUpRaw as LucideIcon;
 export const HelpCircle = HelpCircleRaw as LucideIcon;
+export const Printer = PrinterRaw as LucideIcon;
