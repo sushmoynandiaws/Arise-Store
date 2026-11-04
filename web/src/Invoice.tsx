@@ -223,7 +223,7 @@ export function AriseSellInvoice({
   const balanceDue = isPaid ? 0 : Math.max(0, total - advancePaid);
 
   // Shop monogram / initials
-  const initials = (order.shop.name || "AS")
+  const initials = (order?.shop?.name || "AS")
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)
@@ -345,7 +345,7 @@ export function AriseSellInvoice({
             <span className="seal-verified">VERIFIED</span>
           </div>
           <div className="invoice-brand-text">
-            <h2 className="invoice-shop-name">{order.shop.name}</h2>
+            <h2 className="invoice-shop-name">{order?.shop?.name || "Store"}</h2>
             <p className="invoice-shop-domain">store.arisesell.com</p>
           </div>
         </div>
@@ -360,7 +360,7 @@ export function AriseSellInvoice({
             <span className="meta-label">Payment:</span>
             <span className="meta-val">{paymentMethodLabel(order.payment_method || "cod")}</span>
             <span className="meta-label">Status:</span>
-            <span className="meta-val invoice-status-pill">{order.delivery_status.toUpperCase()}</span>
+            <span className="meta-val invoice-status-pill">{(order.delivery_status || "confirmed").toUpperCase()}</span>
           </div>
         </div>
       </header>
@@ -496,7 +496,7 @@ export function AriseSellInvoice({
       {/* Invoice Footer */}
       <footer className="invoice-footer">
         <p>
-          Thank you for choosing <strong>{order.shop.name}</strong>!
+          Thank you for choosing <strong>{order?.shop?.name || "Store"}</strong>!
         </p>
         <small>
           This is an official computer-generated invoice from arisesell.com · Ref #{order.ref}

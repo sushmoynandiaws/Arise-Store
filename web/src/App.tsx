@@ -3645,7 +3645,8 @@ function PurchasePage() {
     [busy, setBusy] = useState(false),
     [items, setItems] = useState<{ item: number; content: string; name?: string; variant?: string }[] | null>(
       null,
-    );
+    ),
+    [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const requests = useRef<AbortController | null>(null);
   useEffect(() => {
     const controller = new AbortController();
@@ -3764,7 +3765,6 @@ function PurchasePage() {
         )}
       </main>
     );
-  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const paid = order.payment_status === "paid",
     cancelled = order.delivery_status === "cancelled";
   const expired = paymentDeadline <= now;
