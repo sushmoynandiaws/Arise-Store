@@ -12,9 +12,9 @@ export function productSection(hash: string): ProductSection | null {
   return productSections.find((section) => hash === `#product-${section.id}`)?.id ?? null;
 }
 
-function nameSlug(name: string) {
+export function nameSlug(name: string, fallback = "digital-product") {
   return name.normalize("NFKC").toLowerCase().replace(/['’]/g, "")
-    .replace(/[^\p{L}\p{M}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "") || "digital-product";
+    .replace(/[^\p{L}\p{M}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "") || fallback;
 }
 
 export function productSlug(product: Product, products: Product[]) {

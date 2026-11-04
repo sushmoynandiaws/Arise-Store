@@ -385,28 +385,42 @@ async fn traffic(
     let day = now() / 86400;
     let visitor = digest(&format!("{}:{day}", buyer(&headers)?));
     state.rate_limit(&format!("traffic:{visitor}"), 100).await?;
-    let valid = if input.kind == "home" {
-        input.target_id.is_empty()
-    } else if input.kind == "listing" {
-        ["products", "shops"].contains(&input.target_id.as_str())
-    } else {
+    let field = match input.kind.as_str() {
+        "home" if input.target_id.is_empty() => None,
+        "listing" if ["products", "shops"].contains(&input.target_id.as_str()) => None,
+        "shop" => Some("shops"),
+        "product" => Some("products"),
+        _ => return Err(invalid("Page unavailable.")),
+    };
+    if field.is_some() {
         uuid(&input.target_id)?;
+    }
+    if sqlx::query(
+        "SELECT 1 FROM traffic_events WHERE day=$1 AND visitor_hash=$2 AND kind=$3 AND target_id=$4",
+    )
+    .bind(day)
+    .bind(&visitor)
+    .bind(&input.kind)
+    .bind(&input.target_id)
+    .fetch_optional(&state.db)
+    .await
+    .map_err(|_| AppError::internal())?
+    .is_some()
+    {
+        return Ok(Json(json!({"ok":true})));
+    }
+    if let Some(field) = field {
         let feed = crate::app::feed(&state).await?;
-        let field = match input.kind.as_str() {
-            "shop" => "shops",
-            "product" => "products",
-            _ => return Err(invalid("Unknown visit type.")),
-        };
-        feed[field]
+        let exists = feed[field]
             .as_array()
             .into_iter()
             .flatten()
-            .any(|item| item["id"] == input.target_id)
-    };
-    if !valid {
-        return Err(invalid("Page unavailable."));
+            .any(|item| item["id"] == input.target_id);
+        if !exists {
+            return Err(invalid("Page unavailable."));
+        }
     }
-    sqlx::query("INSERT INTO traffic_events VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING")
+    let inserted = sqlx::query("INSERT INTO traffic_events VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING")
         .bind(day)
         .bind(visitor)
         .bind(input.kind)
@@ -414,12 +428,14 @@ async fn traffic(
         .execute(&state.db)
         .await
         .map_err(|_| AppError::internal())?;
-    // Bound retention; daily hashes cannot be used to follow people between days.
-    sqlx::query("DELETE FROM traffic_events WHERE day<$1")
-        .bind(day - 90)
-        .execute(&state.db)
-        .await
-        .map_err(|_| AppError::internal())?;
+    if inserted.rows_affected() > 0 {
+        // Bound retention; daily hashes cannot be used to follow people between days.
+        sqlx::query("DELETE FROM traffic_events WHERE day<$1")
+            .bind(day - 90)
+            .execute(&state.db)
+            .await
+            .map_err(|_| AppError::internal())?;
+    }
     Ok(Json(json!({"ok":true})))
 }
 async fn analytics(State(state): State<AppState>, headers: HeaderMap) -> Result<Json<Value>> {

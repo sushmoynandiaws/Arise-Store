@@ -6,36 +6,12 @@ import fs from "node:fs";
 const appCode = fs.readFileSync("src/App.tsx", "utf8");
 const stylesCode = fs.readFileSync("src/styles.css", "utf8");
 const i18nCode = fs.readFileSync("src/i18n.tsx", "utf8");
-const qrCode = fs.readFileSync("src/qr.ts", "utf8");
-
-test("QR code generator produces valid 2D bit matrix with finder patterns", () => {
-  // Verify pure typescript source includes byte mode, rs error correction, and finder coordinates
-  assert.ok(qrCode.includes("function generateQrMatrix(text: string): boolean[][]"));
-  assert.ok(qrCode.includes("GF_EXP"));
-  assert.ok(qrCode.includes("rsCompute"));
-  assert.ok(qrCode.includes("const finders = [[0, 0], [size - 7, 0], [0, size - 7]];"));
-
-  // Check payment URI formatting
-  const cleanAccount = "01305087389";
-  const amount = "1000";
-  const orderRef = "AR-2026-TEST";
-  const bkashString = `bkash://payment?account=${cleanAccount}&amount=${amount}&ref=${orderRef}`;
-  const nagadString = `nagad://payment?account=${cleanAccount}&amount=${amount}&ref=${orderRef}`;
-
-  assert.ok(bkashString.includes("bkash://payment?account=01305087389"));
-  assert.ok(nagadString.includes("nagad://payment?account=01305087389"));
-});
 
 test("Bilingual i18n dictionary has complete symmetry and essential keys", () => {
-  assert.ok(i18nCode.includes("⚡ ইনস্ট্যান্ট অটো-ডেলিভারি (< ৪৫ সেকেন্ড)"));
-  assert.ok(i18nCode.includes("⚡ Instant Auto-Delivery (< 45s)"));
-  assert.ok(i18nCode.includes("🛡️ ৯৯.৮% অর্ডার কমপ্লিশন রেট"));
-  assert.ok(i18nCode.includes("🛡️ 99.8% Completion Rate"));
-  assert.ok(i18nCode.includes("বেশি কিনুন, বেশি বাঁচুন (ভলিউম ডিসকাউন্ট)"));
-  assert.ok(i18nCode.includes("Buy More, Save More (Volume Discount)"));
   assert.ok(i18nCode.includes("অর্ডার ট্র্যাক"));
   assert.ok(i18nCode.includes("Track order"));
-  assert.ok(i18nCode.includes("1-Click Renew Subscription"));
+  assert.ok(i18nCode.includes("মার্চেন্ট একাউন্ট"));
+  assert.ok(i18nCode.includes("Merchant Account"));
   assert.ok(!i18nCode.includes("Copy Order Recovery Link"));
   assert.ok(!i18nCode.includes("Send Delivery to WhatsApp"));
 });
@@ -74,12 +50,6 @@ test("Subscription expiry calculation evaluates remaining days correctly", () =>
 });
 
 test("App.tsx integrates all advanced e-commerce components and routes", () => {
-  // DynamicPaymentQR
-  assert.ok(appCode.includes("function DynamicPaymentQR("));
-  assert.ok(appCode.includes("provider.toLowerCase().includes(\"bkash\")"));
-  assert.ok(appCode.includes("provider.toLowerCase().includes(\"nagad\")"));
-  assert.ok(appCode.includes("generateQrMatrix(paymentString)"));
-
   // Wishlist
   assert.ok(appCode.includes("function useWishlist()"));
   assert.ok(appCode.includes("function WishlistModal("));
@@ -98,6 +68,7 @@ test("App.tsx integrates all advanced e-commerce components and routes", () => {
   assert.ok(appCode.includes("<ShopReviews"));
 
   // Commerce terms and warranty must come from the source; no local discount or expiry promises.
+  assert.ok(!appCode.includes("function DynamicPaymentQR("));
   assert.ok(!appCode.includes("getShopVolumeConfig"));
   assert.ok(!appCode.includes("RENEW10"));
   assert.ok(!appCode.includes("subscription-expiry-card"));
@@ -130,15 +101,7 @@ test("styles.css includes all corresponding responsive tokens and classes", () =
   assert.ok(stylesCode.includes(".header-wishlist-btn"));
   assert.ok(stylesCode.includes(".wishlist-badge"));
   assert.ok(stylesCode.includes(".card-wishlist-btn"));
-  assert.ok(stylesCode.includes(".dynamic-qr-box"));
-  assert.ok(stylesCode.includes(".payment-mode-tabs"));
-  assert.ok(stylesCode.includes(".open-app-deep-btn"));
   assert.ok(stylesCode.includes(".product-trust-stats-badges"));
-  assert.ok(stylesCode.includes(".volume-discount-widget"));
-  assert.ok(stylesCode.includes(".volume-discount-settings-row"));
-  assert.ok(stylesCode.includes(".preset-pill"));
-  assert.ok(stylesCode.includes(".bundle-cross-sell-box"));
-  assert.ok(stylesCode.includes(".subscription-expiry-card"));
   assert.ok(stylesCode.includes(".track-order-page"));
   assert.ok(stylesCode.includes(".track-shop-card-section"));
   assert.ok(stylesCode.includes(".shop-reviews-section"));
@@ -155,7 +118,6 @@ test("styles.css includes all corresponding responsive tokens and classes", () =
   assert.ok(stylesCode.includes(".sponsored-product-card"));
   assert.ok(stylesCode.includes(".featured-shop-spotlight"));
   assert.ok(stylesCode.includes(".sticky-bottom-ad-strip"));
-  assert.ok(stylesCode.includes(".ads-manager-panel"));
 });
 
 test("Dark theme footer has clean 4-column layout, social pills, and information pages without unwanted cards or payment strip", () => {

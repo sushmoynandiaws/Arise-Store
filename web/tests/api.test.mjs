@@ -106,7 +106,7 @@ test("payment method names are consistent and unknown source names are preserved
   assert.equal(paymentMethodLabel("New source wallet"),"New source wallet");
 });
 test("checkout totals multiply exact minor units and reject incomplete or unsafe values",()=>{
-  const {checkoutTotal}=client();
+  const {checkoutTotal,checkoutItemsTotal}=client();
   assert.equal(checkoutTotal("10.00",6),"60.00");
   assert.equal(checkoutTotal("0.29",3),"0.87");
   assert.equal(checkoutTotal("1290.5",2),"2581.00");
@@ -114,6 +114,11 @@ test("checkout totals multiply exact minor units and reject incomplete or unsafe
   assert.equal(checkoutTotal("11",100),"1100.00");
   for(const quantity of [0,-1,1.5,101,NaN,Infinity]) assert.equal(checkoutTotal("10.00",quantity),null);
   for(const price of ["", "NaN", "-1", "1.001", "1e2", "9007199254740991"]) assert.equal(checkoutTotal(price,1),null);
+  assert.equal(checkoutItemsTotal([{price:"0.10",quantity:1},{price:"0.20",quantity:1}]),"0.30");
+  assert.equal(checkoutItemsTotal([{price:"19.99",quantity:3},{price:"0.01",quantity:1}]),"59.98");
+  assert.equal(checkoutItemsTotal([]),"0.00");
+  assert.equal(checkoutItemsTotal([{price:"10.00",quantity:1},{price:undefined,quantity:1}]),null);
+  assert.equal(checkoutItemsTotal([{price:"10.00",quantity:1},{price:"bad",quantity:1}]),null);
 });
 test("quantity carried from a product link is a bounded whole number",()=>{
   const {checkoutQuantity}=client();

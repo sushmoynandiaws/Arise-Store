@@ -76,6 +76,16 @@ export function checkoutTotal(price: string, quantity: number): string | null {
   const total = (Number(whole) * 100 + Number(fraction.padEnd(2, "0"))) * quantity;
   return Number.isSafeInteger(total) ? (total / 100).toFixed(2) : null;
 }
+export function checkoutItemsTotal(items: { price?: string; quantity: number }[]): string | null {
+  let cents = 0;
+  for (const item of items) {
+    const line = item.price ? checkoutTotal(item.price, item.quantity) : null;
+    if (line === null) return null;
+    cents += Math.round(Number(line) * 100);
+    if (!Number.isSafeInteger(cents)) return null;
+  }
+  return (cents / 100).toFixed(2);
+}
 export function craftPrice(price: string, pieces: number, packagePieces: number, quantity: number, extras: string[] = []): {unit_price: string; total: string} | null {
   if (checkoutTotal(price, quantity) === null || !Number.isInteger(pieces) || pieces < 0 || pieces > 60000 ||
       !Number.isInteger(packagePieces) || packagePieces < 1 || packagePieces > 1000 || extras.some(value => checkoutTotal(value, 1) === null)) return null;

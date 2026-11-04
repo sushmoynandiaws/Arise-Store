@@ -10,7 +10,6 @@ import {
   type ReactNode,
 } from "react";
 import { LangProvider, useLang } from "./i18n.js";
-import { generateQrMatrix } from "./qr.js";
 import { readInitialCatalog } from "./catalog";
 import {
   Link,
@@ -72,6 +71,7 @@ import {
   api,
   setCsrf,
   money,
+  checkoutItemsTotal,
   checkoutTotal,
   checkoutQuantity,
   stock,
@@ -86,7 +86,7 @@ import {
   shopType,
 } from "./api";
 import type { Catalog, Shop, Product, Session, Quote, Purchase } from "./types";
-import { productForRoute, productPath, productSection, type ProductSection } from "./product";
+import { nameSlug, productForRoute, productPath, productSection, type ProductSection } from "./product";
 import { ProductReviews, PurchaseReview, ShopReviews } from "./Reviews";
 import { shopPageSections, defaultPlatformPolicies } from "./shopPages";
 import { StoreFaqAccordion } from "./Faq";
@@ -157,7 +157,10 @@ function useRouteShop() {
 }
 let boot: Promise<Session> | undefined;
 function bootstrap() {
-  return (boot ??= api<Session>("/session"));
+  return (boot ??= api<Session>("/session").catch((e) => {
+    boot = undefined;
+    throw e;
+  }));
 }
 function ErrorBox({ message, retry }: { message: string; retry?: () => void }) {
   const { lang } = useLang();
@@ -319,45 +322,6 @@ export function WishlistModal({
         </div>
       </dialog>
   );
-}
-
-export function DynamicPaymentQR({
-  provider,
-  account,
-  amount,
-  orderRef,
-}: {
-  provider: string;
-  account: string;
-  amount: string;
-  orderRef: string;
-}) {
-  const { t, lang } = useLang();
-  const [mode, setMode] = useState<"qr" | "manual">("qr");
-  const cleanAccount = account.replace(/\s+/g, "");
-
-  const paymentString = `${provider.toLowerCase()}://payment?account=${cleanAccount}&amount=${amount}&ref=${orderRef}`;
-  
-  let appUrl = "";
-  if (provider.toLowerCase().includes("bkash")) {
-    appUrl = `bkash://payment?account=${cleanAccount}&amount=${amount}`;
-  } else if (provider.toLowerCase().includes("nagad")) {
-    appUrl = `nagad://payment?account=${cleanAccount}&amount=${amount}`;
-  }
-
-  const matrix = useMemo(() => {
-    try {
-      return generateQrMatrix(paymentString);
-    } catch {
-      return [];
-    }
-  }, [paymentString]);
-
-  const size = matrix.length || 29;
-  const cellSize = 6;
-  const qrPixelSize = size * cellSize;
-
-  return null;
 }
 
 export function TrackOrderPage() {
@@ -716,7 +680,7 @@ function Header() {
             }
             value={headerSearch}
             onChange={(e) => onSearchChange(e.target.value)}
-            aria-label={shop ? `Search ${shop.name} products` : "Search products"}
+            aria-label={shop ? `Search ${shop.name} catalog` : "Search products"}
           />
           {headerSearch && (
             <button
@@ -1427,35 +1391,16 @@ export function resolveImageUrl(
   productName?: string,
 ): string | null {
   const base = (sourceWeb || "https://arisesell.com").replace(/\/+$/, "");
-  const toSlug = (text: string) =>
-    text
-      .normalize("NFKC")
-      .toLowerCase()
-      .replace(/['\u2019]/g, "")
-      .replace(/[^\p{L}\p{M}\p{N}]+/gu, "-")
-      .replace(/^-+|-+$/g, "");
-
-  if (!url) {
-    if (shopSlug && productName) {
-      const slug = toSlug(productName);
-      if (slug) return `${base}/${encodeURIComponent(shopSlug)}/${encodeURIComponent(slug)}`;
-    }
-    return null;
-  }
-  const trimmed = url.trim();
-  if (!trimmed) {
-    if (shopSlug && productName) {
-      const slug = toSlug(productName);
-      if (slug) return `${base}/${encodeURIComponent(shopSlug)}/${encodeURIComponent(slug)}`;
-    }
-    return null;
-  }
+  const fallbackUrl = () => {
+    const slug = shopSlug && productName ? nameSlug(productName, "") : "";
+    return slug ? `${base}/${encodeURIComponent(shopSlug!)}/${encodeURIComponent(slug)}` : null;
+  };
+  const trimmed = (url || "").trim();
+  if (!trimmed) return fallbackUrl();
   // When an internal unsigned upload path is received, resolve to the public permanent store route
   if (/^\/?api\/v1\/catalog\/image-assets\/[0-9a-fA-F-]{36}\/content$/i.test(trimmed)) {
-    if (shopSlug && productName) {
-      const slug = toSlug(productName);
-      if (slug) return `${base}/${encodeURIComponent(shopSlug)}/${encodeURIComponent(slug)}`;
-    }
+    const resolved = fallbackUrl();
+    if (resolved) return resolved;
   }
   if (/^https?:\/\//i.test(trimmed)) {
     return trimmed;
@@ -1500,7 +1445,9 @@ function Art({
   const { session, catalog } = useMarket();
   const [imgFailed, setImgFailed] = useState(false);
   const shop = catalog?.shops.find((s) => s.id === product.shop_id);
-  const imageUrl = resolveImageUrl(product.image_url, session?.source_web, shop?.slug, product.name);
+  const imageUrl = product.image_url?.trim()
+    ? resolveImageUrl(product.image_url, session?.source_web, shop?.slug, product.name)
+    : null;
   let hash = 0;
   for (const c of product.category) hash += c.charCodeAt(0);
   const tone = hash % 6;
@@ -1601,6 +1548,9 @@ function ProductCard({ product }: { product: Product }) {
             {product.variants.length > 1 && <small>{lang === "bn" ? "শুরু " : "From "}</small>}
             {money(minimumPrice(product), product.currency)}
           </span>
+          <Link to={productPath(product, catalog!)} className="card-buy" aria-label={`View options for ${product.name}`}>
+            <ArrowUpRight size={18} />
+          </Link>
         </div>
       </div>
     </article>
@@ -2644,7 +2594,7 @@ function ProductPage() {
         </div>
           <section id="customer-reviews" tabIndex={-1} className="product-visual-reviews" aria-label="Customer reviews">
             <h2 className="product-reviews-heading">{lang === "bn" ? "গ্রাহক রিভিউ" : "Customer reviews"}</h2>
-            {location.pathname === productPath(product, catalog) && <ProductReviews key={product.id} productId={product.id} />}
+            <ProductReviews key={product.id} productId={product.id} />
           </section>
       </div>
       <dialog ref={infoDialog} className="product-info-dialog" aria-labelledby="product-info-title"
@@ -2749,7 +2699,8 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
   const { lang, t } = useLang();
   const [params] = useSearchParams();
   const cart = useCart();
-  const [bagItems] = useState(() => params.get("cart") === "1" ? cart.items : []);
+  const bagItems = params.get("cart") === "1" ? cart.items : [];
+  const bagKey = bagItems.map((i) => `${i.product_id}:${i.variant_id}:${i.quantity}`).join(",");
   const navigate = useNavigate();
   const product = catalog?.products.find((p) => p.id === id);
   const variant =
@@ -2779,18 +2730,21 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
       const selected = catalog?.products.find(p => p.id === item.product_id);
       return selected && productPayments(selected, shop).includes(method);
     })) || "");
-  }, [shop?.id, product?.id]);
+  }, [shop?.id, product?.id, bagKey]);
+  useEffect(() => {
+    if (bagKey) setQuote(null);
+  }, [bagKey]);
   if (!catalog) return <Loading />;
   if (!product || !variant || !shop) return <NotFound />;
   const digital = productFulfilment(product) === "digital";
   const cartRows = bagItems.map(item => ({...item, product: catalog.products.find(p=>p.id===item.product_id)}));
   const paymentMethods = productPayments(product, shop).filter(method=>cartRows.every(row=>row.product&&productPayments(row.product,shop).includes(method)));
-  if(params.get("cart")==="1" && (!bagItems.length || cartRows.some(row=>!row.product||row.product.shop_id!==shop.id||productFulfilment(row.product)!==productFulfilment(product)))) return <main id="main" className="container section"><h1>Update your bag</h1><p>Use products from one shop and fulfillment type.</p><button className="button secondary" onClick={cart.open}>Open bag</button></main>;
-  if (!canCheckout(product, shop)) return <main id="main" className="container section"><h1>Checkout unavailable</h1><p>{product.checkout_unavailable_reason || "Contact the seller to confirm how to order this product."}</p><Link className="button secondary" to={productPath(product, catalog)}>Back to product</Link></main>;
+  if(params.get("cart")==="1" && (!bagItems.length || cartRows.some(row=>!row.product||row.product.shop_id!==shop.id||productFulfilment(row.product)!==productFulfilment(product)))) return <main id="main" className="container section"><h1>{lang === "bn" ? "আপনার ব্যাগ আপডেট করুন" : "Update your bag"}</h1><p>{lang === "bn" ? "একই শপ এবং একই ডেলিভারি ধরনের পণ্য ব্যবহার করুন।" : "Use products from one shop and fulfillment type."}</p><button className="button secondary" onClick={cart.open}>{lang === "bn" ? "ব্যাগ খুলুন" : "Open bag"}</button></main>;
+  if (!canCheckout(product, shop)) return <main id="main" className="container section"><h1>{lang === "bn" ? "চেকআউট অনুপলব্ধ" : "Checkout unavailable"}</h1><p>{product.checkout_unavailable_reason || (lang === "bn" ? "এই পণ্যটি কীভাবে অর্ডার করবেন তা জানতে বিক্রেতার সাথে যোগাযোগ করুন।" : "Contact the seller to confirm how to order this product.")}</p><Link className="button secondary" to={productPath(product, catalog)}>{lang === "bn" ? "প্রোডাক্টে ফিরে যান" : "Back to product"}</Link></main>;
   const required = new Set(["name", ...product.required_buyer_fields, ...cartRows.flatMap(row=>row.product?.required_buyer_fields || [])]);
-  const cartTotal = bagItems.length ? bagItems.reduce((sum,item)=>{const p=catalog.products.find(p=>p.id===item.product_id),v=p?.variants.find(v=>v.id===item.variant_id);return sum+Number(checkoutTotal(v?.price||"0",item.quantity)||0);},0).toFixed(2) : null;
+  const cartTotal = bagItems.length ? checkoutItemsTotal(bagItems.map(item=>{const p=catalog.products.find(p=>p.id===item.product_id),v=p?.variants.find(v=>v.id===item.variant_id);return {price:v?.price,quantity:item.quantity};})) : null;
   const unitPrice = craftUnitPrice ?? variant.price;
-  const estimatedTotal = cartTotal ?? checkoutTotal(unitPrice, quantity);
+  const estimatedTotal = bagItems.length ? cartTotal : checkoutTotal(unitPrice, quantity);
   const validQuantity = !catalogError && estimatedTotal !== null && paymentMethods.length > 0 && (bagItems.length ? bagItems.every(item=>{const p=catalog.products.find(p=>p.id===item.product_id),v=p?.variants.find(v=>v.id===item.variant_id);return !!p&&!!v&&canCheckout(p,shop)&&item.quantity<=Math.min(v.stock,100);}) : quantity <= Math.min(variant.stock, 100));
   const displayQuantity = bagItems.length ? bagItems.reduce((sum,item)=>sum+item.quantity,0) : quantity;
   const total = quote?.snapshot.total ?? (validQuantity ? estimatedTotal : null);
@@ -2850,7 +2804,7 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
         <h1>{quote ? (lang === "bn" ? "অর্ডারটি রিভিউ করুন" : "Review your order") : (lang === "bn" ? "চেকআউট" : "Checkout")}</h1>
         <p>
           {quote
-            ? (digital ? (lang === "bn" ? "পেমেন্ট রিকোয়েস্ট তৈরির আগে পণ্যের বর্তমান মূল্য এবং বিক্রেতার শর্তাবলী মিলিয়ে দেখুন।" : "Review the current price and seller terms before creating your payment request.") : "Review the delivery address, shipping charge and order total before confirming.")
+            ? (digital ? (lang === "bn" ? "পেমেন্ট রিকোয়েস্ট তৈরির আগে পণ্যের বর্তমান মূল্য এবং বিক্রেতার শর্তাবলী মিলিয়ে দেখুন।" : "Review the current price and seller terms before creating your payment request.") : (lang === "bn" ? "নিশ্চিত করার আগে ডেলিভারি ঠিকানা, শিপিং চার্জ এবং সর্বমোট মূল্য যাচাই করুন।" : "Review the delivery address, shipping charge and order total before confirming."))
             : (lang === "bn" ? "আপনার যোগাযোগের তথ্য লিখুন এবং পেমেন্ট মাধ্যম নির্বাচন করুন।" : "Enter your details and choose a payment method.")}
         </p>
         <ol className="checkout-progress" aria-label="Checkout progress">
@@ -2860,7 +2814,7 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
       </div>
       <div className="checkout-grid">
         <form onSubmit={submit} className="panel checkout-form">
-          {bagItems.length>0&&<div className="checkout-cart-lines"><h2>Items in this order</h2>{bagItems.map(item=>{const p=catalog.products.find(p=>p.id===item.product_id),v=p?.variants.find(v=>v.id===item.variant_id);return <p key={item.variant_id}>{p?.name} · {v?.name} × {item.quantity}</p>;})}</div>}
+          {bagItems.length>0&&<div className="checkout-cart-lines"><h2>{lang === "bn" ? "এই অর্ডারের পণ্যসমূহ" : "Items in this order"}</h2>{bagItems.map(item=>{const p=catalog.products.find(p=>p.id===item.product_id),v=p?.variants.find(v=>v.id===item.variant_id);return <p key={item.variant_id}>{p?.name} · {v?.name} × {item.quantity}</p>;})}</div>}
           <div className="step-heading">
             <span>{quote ? "02" : "01"}</span>
             <h2>{quote ? (lang === "bn" ? "অর্ডারের বিবরণ" : "Order details") : (lang === "bn" ? "যোগাযোগের তথ্য" : "Contact details")}</h2>
@@ -3168,7 +3122,7 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
               <>
                 <div className="summary-line">
                   <span>{lang === "bn" ? "সাবটোটাল" : "Subtotal"}</span>
-                  <strong>{money(quote.snapshot.subtotal || (Number(unitPrice) * (quote.snapshot.quantity || quantity)).toFixed(2))}</strong>
+                  <strong>{money(quote.snapshot.subtotal || checkoutTotal(unitPrice, quote.snapshot.quantity || quantity) || "0.00")}</strong>
                 </div>
                 <div className="summary-line discount-line">
                   <span>
@@ -3195,14 +3149,23 @@ function Purchases() {
   const [orders, setOrders] = useState<Purchase[] | null>(null),
     [error, setError] = useState(""),
     [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending">("all");
+  const request = useRef<AbortController | null>(null);
   const load = () => {
+    request.current?.abort();
+    const ctrl = new AbortController();
+    request.current = ctrl;
     setError("");
-    api<{ orders: Purchase[] }>("/orders")
-      .then((r) => setOrders(r.orders))
-      .catch((e) => setError(e.message));
+    api<{ orders: Purchase[] }>("/orders", { signal: ctrl.signal })
+      .then((r) => {
+        if (!ctrl.signal.aborted) setOrders(r.orders);
+      })
+      .catch((e) => {
+        if (!ctrl.signal.aborted && (e as Error)?.name !== "AbortError") setError(e.message);
+      });
   };
   useEffect(() => {
     if (session) load();
+    return () => request.current?.abort();
   }, [session?.csrf]);
   const visibleOrders = useMemo(() => {
     if (!orders) return [];
@@ -3282,7 +3245,7 @@ function Purchases() {
                 </span>
                 <div>
                   <span className="order-ref">
-                    {order.ref} · {order.shop.name}
+                    <span>{order.ref}</span> · <span>{order.shop.name}</span>
                   </span>
                   <h2>{order.name}</h2>
                   <span>
@@ -3458,15 +3421,6 @@ export function PaymentInstructionCard({
           </div>
         </div>
       </div>
-
-      {payment.account && (payment.provider.toLowerCase().includes("bkash") || payment.provider.toLowerCase().includes("nagad")) && (
-        <DynamicPaymentQR
-          provider={payment.provider}
-          account={payment.account}
-          amount={payment.amount}
-          orderRef={order.ref}
-        />
-      )}
 
       <div className="payment-steps-container">
         <h4 className="payment-steps-heading">
@@ -4867,9 +4821,11 @@ export default function App() {
       });
     if (!catalog) void reloadCatalog();
     const interval = setInterval(() => {
-      if (!document.hidden) void reloadCatalog();
+      if (!document.hidden && !/^\/admin(?:\/|$)/.test(window.location.pathname)) void reloadCatalog();
     }, 30000);
-    const focus = () => void reloadCatalog();
+    const focus = () => {
+      if (!document.hidden && !/^\/admin(?:\/|$)/.test(window.location.pathname)) void reloadCatalog();
+    };
     window.addEventListener("focus", focus);
     return () => {
       current = false;
@@ -4891,7 +4847,7 @@ export default function App() {
           signOut,
         }}
       >
-        <CartProvider catalog={catalog}>
+        <CartProvider catalog={catalog} stale={Boolean(catalog && catalogError)}>
         <VisitTracker catalog={catalog} ready={!!session}/>
         <a className="skip-link" href="#main">
           Skip to content
@@ -4910,8 +4866,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/products" element={<Products />} />
-          <Route path="/products/:id" element={<ProductPage key={pathname} />} />
-          <Route path="/shops/:slug/products/:productSlug" element={<ProductPage key={pathname} />} />
+          <Route path="/products/:id" element={<ProductPage />} />
+          <Route path="/shops/:slug/products/:productSlug" element={<ProductPage />} />
           <Route path="/shops" element={<Shops />} />
           <Route path="/shops/:slug" element={<ShopPage />} />
           <Route path="/shops/:slug/reviews" element={<ShopReviewsPage />} />

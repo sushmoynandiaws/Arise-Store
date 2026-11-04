@@ -10,6 +10,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   api,
   canCheckout,
+  checkoutItemsTotal,
   checkoutTotal,
   money,
   productFulfilment,
@@ -180,9 +181,11 @@ const CartContext = createContext<Bag>(null!);
 export const useCart = () => useContext(CartContext);
 export function CartProvider({
   catalog,
+  stale = false,
   children,
 }: {
   catalog: Catalog | null;
+  stale?: boolean;
   children: ReactNode;
 }) {
   const [items, setItems] = useState<CartLine[]>(readCart),
@@ -229,9 +232,14 @@ export function CartProvider({
           ),
         )
       : [];
+  const subtotal = checkoutItemsTotal(
+    rows.map((row) => ({ price: row.variant?.price, quantity: row.quantity })),
+  );
   const valid =
     !!shop &&
+    !stale &&
     methods.length > 0 &&
+    subtotal !== null &&
     rows.every(
       (row) =>
         row.product &&
@@ -244,15 +252,13 @@ export function CartProvider({
         row.quantity <= row.variant.stock &&
         checkoutTotal(row.variant.price, row.quantity) !== null,
     );
-  const subtotal = rows.reduce(
-    (total, row) =>
-      total +
-      Number(checkoutTotal(row.variant?.price || "0", row.quantity) || 0),
-    0,
-  );
   function add(product: Product, variant: string, quantity: number) {
     if (product.custom_order) {
-      setError("Complete custom product details using Buy now.");
+      setError(
+        lang === "bn"
+          ? "কাস্টম অর্ডারের তথ্য দিতে সরাসরি কিনুন বাটন ব্যবহার করুন।"
+          : "Complete custom product details using Buy now.",
+      );
       setShown(true);
       return;
     }
@@ -282,7 +288,9 @@ export function CartProvider({
       (!existing && items.length >= 20)
     ) {
       setError(
-        "Check available stock. A bag supports up to 20 options, each with up to 100 items.",
+        lang === "bn"
+          ? "স্টক যাচাই করুন। ব্যাগে সর্বোচ্চ ২০টি অপশন এবং প্রতিটিতে সর্বোচ্চ ১০০টি পণ্য যোগ করা যাবে।"
+          : "Check available stock. A bag supports up to 20 options, each with up to 100 items.",
       );
       return;
     }
@@ -356,7 +364,7 @@ export function CartProvider({
         ) : (
           <>
             <p>
-              {shop?.name || "Unavailable shop"} ·{" "}
+              {shop?.name || (lang === "bn" ? "অনুপলব্ধ শপ" : "Unavailable shop")} ·{" "}
               {lang === "bn"
                 ? "চেকআউটে দাম ও স্টক যাচাই হবে।"
                 : "Prices and stock are confirmed at checkout."}
@@ -372,13 +380,19 @@ export function CartProvider({
                       {row.product.name}
                     </Link>
                   ) : (
-                    <strong>Product no longer available</strong>
+                    <strong>
+                      {lang === "bn"
+                        ? "পণ্যটি আর পাওয়া যাচ্ছে না"
+                        : "Product no longer available"}
+                    </strong>
                   )}
                   <span>
                     {row.variant?.name} ·{" "}
                     {row.variant
                       ? money(row.variant.price, row.product?.currency)
-                      : "Unavailable option"}
+                      : lang === "bn"
+                        ? "অনুপলব্ধ অপশন"
+                        : "Unavailable option"}
                   </span>
                   <div className="bag-line-actions">
                     <label>
@@ -425,7 +439,7 @@ export function CartProvider({
             </ul>
             <div className="review-row">
               <span>{lang === "bn" ? "পণ্যের সাবটোটাল" : "Products subtotal"}</span>
-              <strong>{money(subtotal.toFixed(2), first?.currency)}</strong>
+              <strong>{money(subtotal || "0.00", first?.currency)}</strong>
             </div>
             {!valid && (
               <p role="status">
@@ -559,6 +573,7 @@ export function ShopBadge({ shop }: { shop: Shop }) {
   ) : null;
 }
 export function OfferCountdown({ end }: { end: string }) {
+  const { lang } = useLang();
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -572,7 +587,9 @@ export function OfferCountdown({ end }: { end: string }) {
     >
       {seconds
         ? `${Math.floor(seconds / 3600)}h ${Math.floor(seconds / 60) % 60}m ${seconds % 60}s`
-        : "Offer ended"}
+        : lang === "bn"
+          ? "অফার শেষ"
+          : "Offer ended"}
     </time>
   );
 }
@@ -620,11 +637,21 @@ export function FlashDeals({
               <p className="eyebrow">{shop.name}</p>
               <h3>{offer.title}</h3>
               <p>
-                {offer.benefit} off · Use <strong>{offer.code}</strong>
+                {lang === "bn" ? (
+                  <>
+                    {offer.benefit} ছাড় · কোড <strong>{offer.code}</strong>
+                  </>
+                ) : (
+                  <>
+                    {offer.benefit} off · Use <strong>{offer.code}</strong>
+                  </>
+                )}
               </p>
               {Number(offer.min_spend) > 0 && (
                 <p>
-                  Minimum products total:{" "}
+                  {lang === "bn"
+                    ? "সর্বনিম্ন পণ্যের মূল্য:"
+                    : "Minimum products total:"}{" "}
                   {money(offer.min_spend, shop.currency)}
                 </p>
               )}
@@ -633,7 +660,7 @@ export function FlashDeals({
                 className="button secondary"
                 to={`${productPath(product, catalog)}?coupon=${encodeURIComponent(offer.code)}`}
               >
-                View offer
+                {lang === "bn" ? "অফার দেখুন" : "View offer"}
               </Link>
             </article>
           ) : null;

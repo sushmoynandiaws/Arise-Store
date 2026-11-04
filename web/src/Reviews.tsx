@@ -102,7 +102,11 @@ export function ShopReviews({
   lang?: string;
 }) {
   const [reviews, setReviews] = useState<ShopProductReview[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [serverAverage, setServerAverage] = useState<number | null>(null);
+  const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [filterProduct, setFilterProduct] = useState<string>("all");
 
@@ -110,47 +114,66 @@ export function ShopReviews({
     return (catalog?.products || []).filter((p) => p.shop_id === shop.id);
   }, [catalog, shop.id]);
 
+  function mapShopReviews(list: (ProductReview & { product_id?: string })[]) {
+    return list.flatMap((r) => {
+      const prod = shopProducts.find((p) => p.id === r.product_id) || shopProducts[0];
+      return prod ? [{ ...r, product: prod }] : [];
+    });
+  }
+
   useEffect(() => {
-    let current = true;
+    const controller = new AbortController();
     setLoading(true);
     setError("");
 
     if (shopProducts.length === 0) {
       setReviews([]);
+      setTotalCount(0);
+      setServerAverage(null);
+      setHasMore(false);
       setLoading(false);
-      return;
+      return () => controller.abort();
     }
 
-    Promise.all(
-      shopProducts.map(async (prod) => {
-        try {
-          const res = await api<ProductReviewsPage>(`/products/${prod.id}/reviews`);
-          return (res.reviews || []).map((r) => ({
-            ...r,
-            product: prod,
-          }));
-        } catch {
-          return [];
-        }
-      })
+    api<ProductReviewsPage & { reviews: (ProductReview & { product_id?: string })[] }>(
+      `/shops/${shop.id}/reviews`,
+      { signal: controller.signal },
     )
-      .then((results) => {
-        if (!current) return;
-        const all = results.flat();
-        all.sort((a, b) => b.created_at - a.created_at);
-        setReviews(all);
+      .then((res) => {
+        if (controller.signal.aborted) return;
+        setReviews(mapShopReviews(res.reviews || []));
+        setTotalCount(res.count ?? 0);
+        setServerAverage(res.average ?? null);
+        setHasMore(Boolean(res.has_more));
         setLoading(false);
       })
       .catch((err) => {
-        if (!current) return;
-        setError(err.message);
+        if (controller.signal.aborted) return;
+        setError((err as Error).message);
         setLoading(false);
       });
 
-    return () => {
-      current = false;
-    };
+    return () => controller.abort();
   }, [shop.id, shopProducts]);
+
+  async function loadMore() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const res = await api<ProductReviewsPage & { reviews: (ProductReview & { product_id?: string })[] }>(
+        `/shops/${shop.id}/reviews?offset=${reviews.length}`,
+      );
+      setReviews((prev) => [...prev, ...mapShopReviews(res.reviews || [])]);
+      setTotalCount(res.count ?? totalCount);
+      setServerAverage(res.average ?? serverAverage);
+      setHasMore(Boolean(res.has_more));
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const filteredReviews = useMemo(() => {
     if (filterProduct === "all") return reviews;
@@ -158,10 +181,13 @@ export function ShopReviews({
   }, [reviews, filterProduct]);
 
   const averageRating = useMemo(() => {
+    if (serverAverage !== null) return serverAverage.toFixed(1);
     if (reviews.length === 0) return null;
     const total = reviews.reduce((sum, r) => sum + r.rating, 0);
     return (total / reviews.length).toFixed(1);
-  }, [reviews]);
+  }, [reviews, serverAverage]);
+
+  const reviewCount = totalCount || reviews.length;
 
   const productsWithReviews = useMemo(() => {
     const map = new Map<string, { product: Product; count: number }>();
@@ -188,14 +214,14 @@ export function ShopReviews({
           </p>
         </div>
 
-        {reviews.length > 0 && averageRating && (
+        {reviewCount > 0 && averageRating && (
           <div className="shop-reviews-score-card">
             <div className="shop-reviews-score-top">
               <span className="score-number">{averageRating}</span>
               <div className="score-details">
                 <Stars rating={Math.round(Number(averageRating))} />
                 <span className="score-total">
-                  {reviews.length} {reviews.length === 1 ? (lang === "bn" ? "টি রিভিউ" : "review") : (lang === "bn" ? "টি রিভিউ" : "reviews")}
+                  {reviewCount} {reviewCount === 1 ? (lang === "bn" ? "টি রিভিউ" : "review") : (lang === "bn" ? "টি রিভিউ" : "reviews")}
                 </span>
               </div>
             </div>
@@ -214,7 +240,7 @@ export function ShopReviews({
         </div>
       )}
 
-      {!loading && reviews.length === 0 && (
+      {!loading && !error && reviews.length === 0 && (
         <div className="empty-reviews-box">
           <div className="empty-reviews-icon">⭐</div>
           <h3>{lang === "bn" ? "এখনও কোনো রিভিউ জমা পড়েনি" : "No reviews yet for this shop"}</h3>
@@ -294,6 +320,22 @@ export function ShopReviews({
               </article>
             ))}
           </div>
+          {hasMore && !error && (
+            <button
+              type="button"
+              className="button secondary full-width"
+              disabled={busy}
+              onClick={() => void loadMore()}
+            >
+              {busy
+                ? lang === "bn"
+                  ? "লোড হচ্ছে…"
+                  : "Loading…"
+                : lang === "bn"
+                  ? "আরো রিভিউ দেখুন"
+                  : "Load more reviews"}
+            </button>
+          )}
         </>
       )}
 

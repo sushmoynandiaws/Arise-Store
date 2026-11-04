@@ -141,8 +141,15 @@ impl AppState {
         encrypted.map(|v| self.unseal(&v)).transpose()
     }
     pub async fn rate_limit(&self, key: &str, limit: i64) -> Result<()> {
+        let cutoff = now() - 3600;
         let attempts: i64 = sqlx::query_scalar("INSERT INTO rate_limits(bucket,window_start,attempts) VALUES ($1,$2,1) ON CONFLICT(bucket) DO UPDATE SET attempts=CASE WHEN rate_limits.window_start<$3 THEN 1 ELSE rate_limits.attempts+1 END, window_start=CASE WHEN rate_limits.window_start<$3 THEN $2 ELSE rate_limits.window_start END RETURNING attempts")
-            .bind(key).bind(now()).bind(now()-3600).fetch_one(&self.db).await.map_err(|_| AppError::internal())?;
+            .bind(key).bind(now()).bind(cutoff).fetch_one(&self.db).await.map_err(|_| AppError::internal())?;
+        if attempts == 1 {
+            let _ = sqlx::query("DELETE FROM rate_limits WHERE window_start<$1")
+                .bind(cutoff)
+                .execute(&self.db)
+                .await;
+        }
         if attempts > limit {
             return Err(AppError::new(
                 axum::http::StatusCode::TOO_MANY_REQUESTS,

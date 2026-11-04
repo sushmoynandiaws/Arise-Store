@@ -34,21 +34,25 @@ export function PromotionsProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<Promotions>({ ads: [], settings: {} });
   useEffect(() => {
     let current = true;
-    const load = () =>
-      api<Promotions>("/promotions")
+    const load = () => {
+      if (document.hidden) return;
+      void api<Promotions>("/promotions")
         .then((value) => {
           if (current) setData(value);
         })
         .catch(() => {});
-    void load();
+    };
+    load();
     const interval = window.setInterval(load, 30000);
     window.addEventListener("arise_ads_updated", load);
     window.addEventListener("focus", load);
+    document.addEventListener("visibilitychange", load);
     return () => {
       current = false;
       window.clearInterval(interval);
       window.removeEventListener("arise_ads_updated", load);
       window.removeEventListener("focus", load);
+      document.removeEventListener("visibilitychange", load);
     };
   }, []);
   return (
@@ -105,6 +109,36 @@ function recordAdClick(id: string) {
   }).catch(() => {});
 }
 
+function AdLink({
+  ad,
+  className,
+  children,
+}: {
+  ad: PublicAd;
+  className: string;
+  children: ReactNode;
+}) {
+  return ad.target_url.startsWith("http") ? (
+    <a
+      href={ad.target_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+      onClick={() => recordAdClick(ad.id)}
+    >
+      {children}
+    </a>
+  ) : (
+    <Link
+      to={ad.target_url}
+      className={className}
+      onClick={() => recordAdClick(ad.id)}
+    >
+      {children}
+    </Link>
+  );
+}
+
 /** Home Hero Sponsored Banner */
 export function HomeHeroSponsoredAd() {
   const { ads } = useSponsoredAds();
@@ -138,27 +172,10 @@ export function HomeHeroSponsoredAd() {
           </div>
           <h2 className="sponsored-hero-title">{ad.title}</h2>
           <div className="sponsored-hero-actions">
-            {isExternal ? (
-              <a
-                href={ad.target_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="button primary sponsored-cta-btn"
-                onClick={() => recordAdClick(ad.id)}
-              >
-                {ad.cta_text || "Check Deal"}
-                <ExternalLink size={16} />
-              </a>
-            ) : (
-              <Link
-                to={ad.target_url}
-                className="button primary sponsored-cta-btn"
-                onClick={() => recordAdClick(ad.id)}
-              >
-                {ad.cta_text || "Check Deal"}
-                <ArrowRight size={16} />
-              </Link>
-            )}
+            <AdLink ad={ad} className="button primary sponsored-cta-btn">
+              {ad.cta_text || "Check Deal"}
+              {isExternal ? <ExternalLink size={16} /> : <ArrowRight size={16} />}
+            </AdLink>
           </div>
         </div>
         {ad.banner_url && (
@@ -183,32 +200,14 @@ export function TopFlashSponsoredAd() {
 
   if (!ad) return null;
 
-  const isExternal = ad.target_url.startsWith("http");
-
   return (
     <div data-ad-id={ad.id} className="top-flash-sponsored-bar">
       <div className="container top-flash-inner">
         <span className="sponsored-ad-tag">{ad.badge_text || "Ad"}</span>
         <span className="top-flash-title">{ad.title}</span>
-        {isExternal ? (
-          <a
-            href={ad.target_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="top-flash-link"
-            onClick={() => recordAdClick(ad.id)}
-          >
-            {ad.cta_text || "Learn More"} &rarr;
-          </a>
-        ) : (
-          <Link
-            to={ad.target_url}
-            className="top-flash-link"
-            onClick={() => recordAdClick(ad.id)}
-          >
-            {ad.cta_text || "Learn More"} &rarr;
-          </Link>
-        )}
+        <AdLink ad={ad} className="top-flash-link">
+          {ad.cta_text || "Learn More"} &rarr;
+        </AdLink>
       </div>
     </div>
   );
@@ -225,8 +224,6 @@ export function SponsoredProductCard() {
   }, [ad?.id]);
 
   if (!ad) return null;
-
-  const isExternal = ad.target_url.startsWith("http");
 
   return (
     <div data-ad-id={ad.id} className="product-card sponsored-product-card">
@@ -257,25 +254,9 @@ export function SponsoredProductCard() {
           <span className="sponsored-verified-badge">
             <CheckCircle2 size={13} /> Sponsored
           </span>
-          {isExternal ? (
-            <a
-              href={ad.target_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="button primary small"
-              onClick={() => recordAdClick(ad.id)}
-            >
-              {ad.cta_text || "View"}
-            </a>
-          ) : (
-            <Link
-              to={ad.target_url}
-              className="button primary small"
-              onClick={() => recordAdClick(ad.id)}
-            >
-              {ad.cta_text || "View"}
-            </Link>
-          )}
+          <AdLink ad={ad} className="button primary small">
+            {ad.cta_text || "View"}
+          </AdLink>
         </div>
       </div>
     </div>
@@ -294,6 +275,8 @@ export function FeaturedShopSponsoredAd() {
 
   if (!ad) return null;
 
+  const isExternal = ad.target_url.startsWith("http");
+
   return (
     <div
       data-ad-id={ad.id}
@@ -311,14 +294,10 @@ export function FeaturedShopSponsoredAd() {
           </span>
         </div>
         <h3>{ad.title}</h3>
-        <Link
-          to={ad.target_url}
-          className="button primary"
-          onClick={() => recordAdClick(ad.id)}
-        >
+        <AdLink ad={ad} className="button primary">
           {ad.cta_text || "Visit Featured Shop"}
-          <ArrowRight size={16} />
-        </Link>
+          {isExternal ? <ExternalLink size={16} /> : <ArrowRight size={16} />}
+        </AdLink>
       </div>
       {ad.banner_url && (
         <div className="featured-shop-art" aria-hidden="true">
@@ -354,8 +333,6 @@ export function StickyBottomSponsoredStrip() {
     } catch {}
   };
 
-  const isExternal = ad.target_url.startsWith("http");
-
   return (
     <aside
       data-ad-id={ad.id}
@@ -372,25 +349,9 @@ export function StickyBottomSponsoredStrip() {
           <p className="sticky-ad-title">{ad.title}</p>
         </div>
         <div className="sticky-ad-right">
-          {isExternal ? (
-            <a
-              href={ad.target_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="button primary small"
-              onClick={() => recordAdClick(ad.id)}
-            >
-              {ad.cta_text || "Claim Offer"}
-            </a>
-          ) : (
-            <Link
-              to={ad.target_url}
-              className="button primary small"
-              onClick={() => recordAdClick(ad.id)}
-            >
-              {ad.cta_text || "Claim Offer"}
-            </Link>
-          )}
+          <AdLink ad={ad} className="button primary small">
+            {ad.cta_text || "Claim Offer"}
+          </AdLink>
           <button
             type="button"
             className="sticky-ad-close-btn"

@@ -60,6 +60,7 @@ fn build_router(state: AppState, serve_web: bool) -> Router {
         .route("/api/auth/logout", post(logout))
         .route("/api/catalog", get(catalog))
         .route("/api/products/{id}/reviews", get(product_reviews))
+        .route("/api/shops/{id}/reviews", get(shop_reviews))
         .route("/api/seller", get(seller))
         .route("/api/seller/stores/{id}/catalog", get(seller_catalog))
         .route("/api/seller/stores/{id}/listing", put(save_listing))
@@ -197,7 +198,7 @@ async fn security(State(state): State<AppState>, request: Request, next: Next) -
     );
     headers.insert("Referrer-Policy", HeaderValue::from_static("no-referrer"));
     headers.insert("X-Frame-Options", HeaderValue::from_static("DENY"));
-    headers.insert("Content-Security-Policy",HeaderValue::from_static("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"));
+    headers.insert("Content-Security-Policy",HeaderValue::from_static("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"));
     if api {
         headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
     }
@@ -582,6 +583,9 @@ async fn save_listing(
 }
 async fn ensure_visible(state: &AppState, body: &Value) -> Result<()> {
     let catalog = feed(state).await?;
+    ensure_visible_in(&catalog, body)
+}
+fn ensure_visible_in(catalog: &Value, body: &Value) -> Result<()> {
     let mut items = vec![body];
     if let Some(lines) = body["items"].as_array() {
         items.extend(lines);
@@ -751,7 +755,8 @@ async fn accept(
     headers: HeaderMap,
     Json(body): Json<Value>,
 ) -> Result<Json<Value>> {
-    ensure_visible(&state, &body).await?;
+    let catalog = feed(&state).await?;
+    ensure_visible_in(&catalog, &body)?;
     let draft = body["draft_id"].as_str().ok_or_else(|| {
         AppError::new(StatusCode::UNPROCESSABLE_ENTITY, "Choose a valid checkout.")
     })?;
@@ -764,7 +769,7 @@ async fn accept(
         None,
     )
     .await?;
-    ensure_visible(&state, &scope.0).await?;
+    ensure_visible_in(&catalog, &scope.0)?;
     commerce(
         &state,
         &headers,
@@ -815,13 +820,17 @@ fn reviewable_order(order: &Value) -> bool {
             .is_some_and(|id| uuid::Uuid::parse_str(id).is_ok())
 }
 fn public_review(row: sqlx::any::AnyRow) -> Result<Value> {
-    Ok(json!({
+    let mut item = json!({
         "id": row.try_get::<String,_>("id").map_err(|_| AppError::internal())?,
         "rating": row.try_get::<i64,_>("rating").map_err(|_| AppError::internal())?,
         "display_name": row.try_get::<String,_>("display_name").map_err(|_| AppError::internal())?,
         "comment": row.try_get::<String,_>("comment").map_err(|_| AppError::internal())?,
         "created_at": row.try_get::<i64,_>("created_at").map_err(|_| AppError::internal())?,
-    }))
+    });
+    if let Ok(product_id) = row.try_get::<String, _>("product_id") {
+        item["product_id"] = json!(product_id);
+    }
+    Ok(item)
 }
 #[derive(Deserialize)]
 struct ReviewPage {
@@ -853,6 +862,38 @@ async fn product_reviews(
     let count: i64 = summary.try_get("count").map_err(|_| AppError::internal())?;
     let total: i64 = summary.try_get("total").map_err(|_| AppError::internal())?;
     let reviews = sqlx::query(if admin_ready {"SELECT id,CAST(rating AS BIGINT) AS rating,display_name,comment,created_at FROM reviews WHERE product_id=$1 AND id NOT IN (SELECT review_id FROM review_moderation WHERE hidden=1) ORDER BY created_at DESC,id DESC LIMIT 20 OFFSET $2"} else {"SELECT id,CAST(rating AS BIGINT) AS rating,display_name,comment,created_at FROM reviews WHERE product_id=$1 ORDER BY created_at DESC,id DESC LIMIT 20 OFFSET $2"})
+        .bind(id).bind(i64::from(page.offset)).fetch_all(&state.db).await.map_err(|_| AppError::internal())?
+        .into_iter().map(public_review).collect::<Result<Vec<_>>>()?;
+    Ok(Json(
+        json!({"count":count,"average":if count > 0 { Some(total as f64 / count as f64) } else { None },
+        "has_more":i64::from(page.offset)+(reviews.len() as i64) < count,"reviews":reviews}),
+    ))
+}
+async fn shop_reviews(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    Query(page): Query<ReviewPage>,
+) -> Result<Json<Value>> {
+    uuid(&id)?;
+    if page.offset > 100_000 {
+        return Err(AppError::new(
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "Review page is out of range.",
+        ));
+    }
+    let catalog = feed(&state).await?;
+    if !catalog["shops"]
+        .as_array()
+        .is_some_and(|rows| rows.iter().any(|row| row["id"] == id))
+    {
+        return Err(AppError::new(StatusCode::NOT_FOUND, "Shop not found."));
+    }
+    let admin_ready = crate::admin::schema_ready(&state).await?;
+    let summary = sqlx::query(if admin_ready {"SELECT COUNT(*) AS count,CAST(COALESCE(SUM(rating),0) AS BIGINT) AS total FROM reviews WHERE shop_id=$1 AND id NOT IN (SELECT review_id FROM review_moderation WHERE hidden=1)"} else {"SELECT COUNT(*) AS count,CAST(COALESCE(SUM(rating),0) AS BIGINT) AS total FROM reviews WHERE shop_id=$1"})
+        .bind(&id).fetch_one(&state.db).await.map_err(|_| AppError::internal())?;
+    let count: i64 = summary.try_get("count").map_err(|_| AppError::internal())?;
+    let total: i64 = summary.try_get("total").map_err(|_| AppError::internal())?;
+    let reviews = sqlx::query(if admin_ready {"SELECT id,product_id,CAST(rating AS BIGINT) AS rating,display_name,comment,created_at FROM reviews WHERE shop_id=$1 AND id NOT IN (SELECT review_id FROM review_moderation WHERE hidden=1) ORDER BY created_at DESC,id DESC LIMIT 50 OFFSET $2"} else {"SELECT id,product_id,CAST(rating AS BIGINT) AS rating,display_name,comment,created_at FROM reviews WHERE shop_id=$1 ORDER BY created_at DESC,id DESC LIMIT 50 OFFSET $2"})
         .bind(id).bind(i64::from(page.offset)).fetch_all(&state.db).await.map_err(|_| AppError::internal())?
         .into_iter().map(public_review).collect::<Result<Vec<_>>>()?;
     Ok(Json(
@@ -961,7 +1002,11 @@ async fn report(
     uuid(&body.product_id)?;
     let buyer = buyer(&headers)?;
     let reason = body.reason.trim();
-    if !(10..=1000).contains(&reason.len()) {
+    if !(10..=1000).contains(&reason.chars().count())
+        || reason
+            .chars()
+            .any(|c| c.is_control() && !matches!(c, '\n' | '\r' | '\t'))
+    {
         return Err(AppError::new(
             StatusCode::UNPROCESSABLE_ENTITY,
             "Describe the issue in 10 to 1,000 characters.",
@@ -1025,8 +1070,12 @@ async fn moderate(
 ) -> Result<Json<Value>> {
     let actor = require_admin(&state, &headers).await?;
     uuid(&body.target_id)?;
+    let reason = body.reason.trim();
     if !matches!(body.kind.as_str(), "shop" | "product")
-        || !(5..=1000).contains(&body.reason.trim().len())
+        || !(5..=1000).contains(&reason.chars().count())
+        || reason
+            .chars()
+            .any(|c| c.is_control() && !matches!(c, '\n' | '\r' | '\t'))
     {
         return Err(AppError::new(
             StatusCode::UNPROCESSABLE_ENTITY,
