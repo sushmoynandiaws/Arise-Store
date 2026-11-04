@@ -3776,6 +3776,10 @@ function PurchasePage() {
         {lang === "bn" ? "আমার অর্ডারসমূহ" : "My purchases"}
       </Link>
       <div className="purchase-page-heading">
+        <div className="print-only receipt-print-brand">
+          <h2>{order.shop.name}</h2>
+          <p>Arise Digital Store · {lang === "bn" ? "অফিসিয়াল অর্ডার রিসিট" : "Official Order Receipt"}</p>
+        </div>
         <span className={`purchase-hero-icon ${paid && !cancelled ? "positive" : ""}`}>
           {paid && !cancelled ? <CheckCircle2 size={32} /> : <LockKeyhole size={30} />}
         </span>
@@ -3793,19 +3797,6 @@ function PurchasePage() {
             <Printer size={15} />
             <span>{lang === "bn" ? "রিসিট প্রিন্ট / PDF" : "Download / Print Receipt"}</span>
           </button>
-        </div>
-      </div>
-      <div className="print-only receipt-print-header">
-        <div className="receipt-print-brand">
-          <h2>{order.shop.name}</h2>
-          <p>Arise Digital Store · {lang === "bn" ? "অফিসিয়াল অর্ডার রিসিট" : "Official Order Receipt"}</p>
-        </div>
-        <div className="receipt-print-meta">
-          <p><strong>{lang === "bn" ? "অর্ডার আইডি:" : "Order Ref:"}</strong> {order.ref}</p>
-          <p><strong>{lang === "bn" ? "তারিখ:" : "Date:"}</strong> {new Date(order.created_at || Date.now()).toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
-          <p><strong>{lang === "bn" ? "পেমেন্ট:" : "Payment:"}</strong> {paymentLabel(order.payment_status, lang)}</p>
-          <p><strong>{lang === "bn" ? "ডেলিভারি:" : "Delivery:"}</strong> {deliveryLabel(order.delivery_status, lang)}</p>
-          {order.payment?.trx_id && <p><strong>TrxID:</strong> {order.payment.trx_id}</p>}
         </div>
       </div>
       {error && <ErrorBox message={error} />}

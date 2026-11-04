@@ -286,7 +286,7 @@ test("PurchasePage receipt printing, credential parsing and live tab alerts are 
   // Verify App.tsx contains print, credential and tab alert logic
   assert.ok(appCode.includes("print-receipt-btn"), "App.tsx should have print-receipt-btn");
   assert.ok(appCode.includes("window.print()"), "App.tsx should trigger window.print");
-  assert.ok(appCode.includes("receipt-print-header"), "App.tsx should render receipt-print-header");
+  assert.ok(appCode.includes("receipt-print-brand"), "App.tsx should render receipt-print-brand");
   assert.ok(appCode.includes("downloadCredentialsTxt"), "App.tsx should define downloadCredentialsTxt");
   assert.ok(appCode.includes("credential-actions-bar"), "App.tsx should render credential-actions-bar");
   assert.ok(appCode.includes("new Notification"), "App.tsx should trigger browser notifications when order is ready");
@@ -294,6 +294,6 @@ test("PurchasePage receipt printing, credential parsing and live tab alerts are 
 
   // Verify styles.css contains @media print rules
   assert.ok(stylesCode.includes("@media print"), "styles.css should contain @media print");
-  assert.ok(stylesCode.includes(".receipt-print-header"), "styles.css should style .receipt-print-header");
+  assert.ok(stylesCode.includes(".receipt-print-brand"), "styles.css should style .receipt-print-brand");
   assert.ok(stylesCode.includes(".credential-actions-bar"), "styles.css should style .credential-actions-bar");
 });
