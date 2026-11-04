@@ -420,14 +420,15 @@ async fn traffic(
             return Err(invalid("Page unavailable."));
         }
     }
-    let inserted = sqlx::query("INSERT INTO traffic_events VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING")
-        .bind(day)
-        .bind(visitor)
-        .bind(input.kind)
-        .bind(input.target_id)
-        .execute(&state.db)
-        .await
-        .map_err(|_| AppError::internal())?;
+    let inserted =
+        sqlx::query("INSERT INTO traffic_events VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING")
+            .bind(day)
+            .bind(visitor)
+            .bind(input.kind)
+            .bind(input.target_id)
+            .execute(&state.db)
+            .await
+            .map_err(|_| AppError::internal())?;
     if inserted.rows_affected() > 0 {
         // Bound retention; daily hashes cannot be used to follow people between days.
         sqlx::query("DELETE FROM traffic_events WHERE day<$1")
