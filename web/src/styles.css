@@ -3838,20 +3838,15 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
   font-weight: 600;
 }
 
-@media screen {
-  .print-only {
-    display: none !important;
-  }
+.print-only,
+.arisesell-invoice-print {
+  display: none !important;
 }
 
 
 /* ==========================================================================
    AriseSell Official Invoice Styles (Screen & Print)
    ========================================================================== */
-
-.arisesell-invoice-print {
-  display: none;
-}
 
 .arisesell-invoice-card {
   position: relative;

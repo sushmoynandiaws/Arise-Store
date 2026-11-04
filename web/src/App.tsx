@@ -3646,13 +3646,31 @@ function PurchasePage() {
     [items, setItems] = useState<{ item: number; content: string; name?: string; variant?: string }[] | null>(
       null,
     ),
-    [showInvoiceModal, setShowInvoiceModal] = useState(false);
+    [showInvoiceModal, setShowInvoiceModal] = useState(false),
+    [isPrinting, setIsPrinting] = useState(false);
   const requests = useRef<AbortController | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     requests.current = controller;
     return () => controller.abort();
   }, []);
+  useEffect(() => {
+    const onBefore = () => setIsPrinting(true);
+    const onAfter = () => setIsPrinting(false);
+    window.addEventListener("beforeprint", onBefore);
+    window.addEventListener("afterprint", onAfter);
+    return () => {
+      window.removeEventListener("beforeprint", onBefore);
+      window.removeEventListener("afterprint", onAfter);
+    };
+  }, []);
+  const handlePrint = () => {
+    setIsPrinting(true);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setIsPrinting(false), 500);
+    }, 50);
+  };
   const navigate = useNavigate();
   const [now, setNow] = useState(Date.now);
   const paymentDeadline = order?.payment ? Date.parse(order.payment.expires_at) : NaN;
@@ -3803,7 +3821,7 @@ function PurchasePage() {
           <button
             type="button"
             className="button secondary small print-receipt-btn"
-            onClick={() => window.print()}
+            onClick={handlePrint}
             aria-label={lang === "bn" ? "রিসিট প্রিন্ট বা PDF হিসেবে সংরক্ষণ করুন" : "Download / Print Receipt"}
           >
             <Printer size={15} />
@@ -3814,7 +3832,7 @@ function PurchasePage() {
 
       {/* Official AriseSell Invoice printable layout */}
       <div className="print-only arisesell-invoice-print">
-        <AriseSellInvoice order={order} lang={lang} />
+        {isPrinting && <AriseSellInvoice order={order} lang={lang} />}
       </div>
 
       {/* Screen Preview Modal */}
@@ -3827,7 +3845,7 @@ function PurchasePage() {
                 <button
                   type="button"
                   className="button primary small"
-                  onClick={() => window.print()}
+                  onClick={handlePrint}
                 >
                   <Printer size={15} />
                   <span>{lang === "bn" ? "প্রিন্ট / PDF সংরক্ষণ" : "Print / Save PDF"}</span>

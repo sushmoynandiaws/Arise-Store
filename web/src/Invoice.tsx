@@ -279,7 +279,7 @@ export function AriseSellInvoice({
           quantity: order.quantity || 1,
           unit_price: order.quantity > 0 ? subtotal / order.quantity : subtotal,
           total: subtotal,
-          sku: order.ref ? `SKU: ${order.ref}` : undefined,
+          sku: (order as any).sku ? `SKU: ${(order as any).sku}` : undefined,
           custom_designs: customBullets,
         },
       ];
@@ -499,7 +499,7 @@ export function AriseSellInvoice({
           Thank you for choosing <strong>{order?.shop?.name || "Store"}</strong>!
         </p>
         <small>
-          This is an official computer-generated invoice from arisesell.com · Ref #{order.ref}
+          This is an official computer-generated invoice from store.arisesell.com
         </small>
       </footer>
     </article>
