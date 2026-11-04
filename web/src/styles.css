@@ -3844,17 +3844,452 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
   }
 }
 
+
+/* ==========================================================================
+   AriseSell Official Invoice Styles (Screen & Print)
+   ========================================================================== */
+
+.arisesell-invoice-print {
+  display: none;
+}
+
+.arisesell-invoice-card {
+  position: relative;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 32px 36px;
+  max-width: 820px;
+  margin: 0 auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  font-family: inherit;
+  overflow: hidden;
+}
+
+.invoice-watermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  height: 320px;
+  color: #0f766e;
+  opacity: 0.045;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.watermark-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.invoice-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.invoice-brand-col {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.invoice-seal-badge {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: 1.5px dashed #0f766e;
+  background: #f0fdf4;
+  color: #0f766e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.seal-stars {
+  font-size: 8px;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+.seal-monogram {
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: 0.5px;
+}
+
+.seal-verified {
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.invoice-shop-name {
+  font-size: 22px;
+  font-weight: 800;
+  margin: 0;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.invoice-shop-domain {
+  font-size: 13px;
+  color: #64748b;
+  margin: 3px 0 0;
+}
+
+.invoice-meta-col {
+  text-align: right;
+}
+
+.invoice-title {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  margin: 0 0 8px;
+  color: #0f172a;
+}
+
+.invoice-meta-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 10px;
+  font-size: 12.5px;
+  justify-content: end;
+  text-align: right;
+}
+
+.meta-label {
+  color: #64748b;
+}
+
+.meta-val {
+  color: #0f172a;
+}
+
+.invoice-status-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: #f1f5f9;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.invoice-customer-card {
+  position: relative;
+  z-index: 1;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 18px;
+  margin-bottom: 22px;
+}
+
+.customer-heading {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.customer-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: #0f172a;
+}
+
+.customer-phone,
+.customer-address,
+.customer-note {
+  font-size: 13px;
+  color: #334155;
+  margin: 2px 0;
+}
+
+.invoice-table {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+
+.invoice-table thead th {
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  padding: 10px 12px;
+  border-top: 1px solid #cbd5e1;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.invoice-table th.th-num { width: 36px; text-align: center; }
+.invoice-table th.th-desc { text-align: left; }
+.invoice-table th.th-qty { width: 60px; text-align: center; }
+.invoice-table th.th-price { width: 95px; text-align: right; }
+.invoice-table th.th-total { width: 100px; text-align: right; }
+
+.invoice-table tbody td {
+  padding: 12px 12px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 13px;
+  vertical-align: top;
+}
+
+.invoice-table td.td-num { text-align: center; color: #64748b; font-weight: 600; }
+.invoice-table td.td-desc { text-align: left; }
+.invoice-table td.td-qty { text-align: center; font-weight: 600; }
+.invoice-table td.td-price { text-align: right; }
+.invoice-table td.td-total { text-align: right; font-weight: 700; }
+
+.item-name {
+  color: #0f172a;
+  font-size: 13.5px;
+}
+
+.item-variant {
+  color: #64748b;
+  font-size: 12.5px;
+}
+
+.item-custom-list {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.item-design-bullet {
+  display: inline-block;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin: 2px 4px 2px 0;
+  font-size: 11.5px;
+  border: 1px solid #e2e8f0;
+}
+
+.item-specs-list {
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: #64748b;
+}
+
+.item-spec-item {
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.item-sku {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
+  font-family: monospace;
+}
+
+.invoice-bottom-grid {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.invoice-qr-box {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px;
+  text-align: center;
+  background: #ffffff;
+  width: 150px;
+  flex-shrink: 0;
+}
+
+.invoice-qr-canvas {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.invoice-qr-caption {
+  font-size: 11.5px;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.qr-dot {
+  color: #10b981;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.invoice-qr-url {
+  display: block;
+  font-size: 9.5px;
+  color: #94a3b8;
+  margin-top: 4px;
+  word-break: break-all;
+}
+
+.invoice-totals-box {
+  min-width: 290px;
+  margin-left: auto;
+}
+
+.invoice-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  color: #334155;
+}
+
+.invoice-breakdown-row.discount {
+  color: #e11d48;
+}
+
+.invoice-breakdown-row.total-row {
+  border-top: 1.5px solid #cbd5e1;
+  padding-top: 8px;
+  margin-top: 6px;
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.invoice-balance-banner {
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-top: 12px;
+}
+
+.invoice-balance-banner.due {
+  background: #e6f4ea;
+  border: 1.5px solid #a7f3d0;
+  color: #065f46;
+}
+
+.invoice-balance-banner.paid {
+  background: #ecfdf5;
+  border: 1.5px solid #6ee7b7;
+  color: #047857;
+}
+
+.banner-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.banner-label {
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.banner-amount {
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.banner-sub {
+  font-size: 11.5px;
+  margin-top: 4px;
+  opacity: 0.85;
+}
+
+.invoice-footer {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.invoice-footer p {
+  margin: 0 0 3px;
+  color: #334155;
+}
+
+/* Modal styles for invoice preview */
+.invoice-preview-modal {
+  max-width: 860px !important;
+  width: 95% !important;
+  max-height: 90vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.invoice-modal-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border, #e2e8f0);
+  background: var(--surface, #ffffff);
+}
+
+.invoice-modal-topbar h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.invoice-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.invoice-modal-scrollable {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: var(--canvas, #f8fafc);
+}
+
 @media print {
   @page {
     size: A4 portrait;
-    margin: 12mm;
+    margin: 8mm 10mm;
   }
 
   body {
     background: #ffffff !important;
     color: #111111 !important;
-    font-size: 13px !important;
-    line-height: 1.4 !important;
+    font-size: 12px !important;
+    line-height: 1.35 !important;
   }
 
   header,
@@ -3875,7 +4310,14 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
   .merchant-alert,
   .personal-alert,
   .action-pill-highlight,
-  .sticky-ad-container {
+  .sticky-ad-container,
+  .purchase-page-heading h1,
+  .purchase-page-heading > p,
+  .purchase-heading-actions,
+  .purchase-grid,
+  .modal-backdrop,
+  .modal-content,
+  .receipt-print-brand {
     display: none !important;
   }
 
@@ -3883,73 +4325,32 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
     display: block !important;
   }
 
-  .receipt-print-brand {
-    border-bottom: 2px solid #111;
-    padding-bottom: 12px;
-    margin-bottom: 20px;
-  }
-
-  .receipt-print-brand h2 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    color: #000;
-  }
-
-  .receipt-print-brand p {
-    margin: 2px 0 0;
-    font-size: 13px;
-    color: #555;
-  }
-
-  .purchase-page {
+  .arisesell-invoice-print {
+    display: block !important;
+    width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  .purchase-page-heading h1 {
-    font-size: 18px !important;
-    margin-bottom: 4px !important;
-  }
-
-  .purchase-grid {
-    display: block !important;
-  }
-
-  .purchase-col-summary,
-  .purchase-col-action {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  .panel.purchase-panel {
+  .arisesell-invoice-card {
+    border: none !important;
     box-shadow: none !important;
-    border: 1px solid #ccc !important;
+    padding: 0 !important;
+    max-width: 100% !important;
     background: #ffffff !important;
-    padding: 14px !important;
-    margin-bottom: 16px !important;
-    break-inside: avoid;
   }
 
-  .order-status-grid,
-  .buyer-summary-grid {
-    background: #f8f8f8 !important;
-    border: 1px solid #eee !important;
-    padding: 10px !important;
+  .invoice-table {
+    page-break-inside: auto;
   }
 
-  .private-item {
-    border: 1px solid #ccc !important;
-    background: #ffffff !important;
-    break-inside: avoid;
+  .invoice-table tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
   }
 
-  .private-item pre {
-    background: #f7f7f7 !important;
-    color: #111 !important;
-    border: 1px solid #e0e0e0 !important;
-    white-space: pre-wrap !important;
-    word-break: break-all !important;
+  .invoice-bottom-grid {
+    page-break-inside: avoid;
   }
 }

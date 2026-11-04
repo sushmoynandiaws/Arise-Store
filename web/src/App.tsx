@@ -54,6 +54,7 @@ import {
   LoaderCircle,
   Download,
   Printer,
+  FileText,
   Flag,
   Plus,
   LogOut,
@@ -102,6 +103,7 @@ import {
   StickyBottomSponsoredStrip,
 } from "./ads.js";
 
+import { AriseSellInvoice } from "./Invoice.js";
 const CraftCheckout = lazy(() => import("./CraftCheckout").then(module => ({default: module.CraftCheckout})));
 const ShoppingAssistant = lazy(() => import("./ShoppingAssistant").then(module => ({default: module.ShoppingAssistant})));
 
@@ -3762,6 +3764,7 @@ function PurchasePage() {
         )}
       </main>
     );
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const paid = order.payment_status === "paid",
     cancelled = order.delivery_status === "cancelled";
   const expired = paymentDeadline <= now;
@@ -3790,6 +3793,15 @@ function PurchasePage() {
         <div className="purchase-heading-actions no-print">
           <button
             type="button"
+            className="button secondary small view-invoice-btn"
+            onClick={() => setShowInvoiceModal(true)}
+            aria-label={lang === "bn" ? "ইনভয়েস দেখুন" : "View Invoice"}
+          >
+            <FileText size={15} />
+            <span>{lang === "bn" ? "ইনভয়েস দেখুন" : "View Invoice"}</span>
+          </button>
+          <button
+            type="button"
             className="button secondary small print-receipt-btn"
             onClick={() => window.print()}
             aria-label={lang === "bn" ? "রিসিট প্রিন্ট বা PDF হিসেবে সংরক্ষণ করুন" : "Download / Print Receipt"}
@@ -3799,6 +3811,43 @@ function PurchasePage() {
           </button>
         </div>
       </div>
+
+      {/* Official AriseSell Invoice printable layout */}
+      <div className="print-only arisesell-invoice-print">
+        <AriseSellInvoice order={order} lang={lang} />
+      </div>
+
+      {/* Screen Preview Modal */}
+      {showInvoiceModal && (
+        <div className="modal-backdrop" onClick={() => setShowInvoiceModal(false)}>
+          <div className="modal-content invoice-preview-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="invoice-modal-topbar">
+              <h3>{lang === "bn" ? "অফিসিয়াল ইনভয়েস প্রিভিউ" : "Official Invoice Preview"}</h3>
+              <div className="invoice-modal-actions">
+                <button
+                  type="button"
+                  className="button primary small"
+                  onClick={() => window.print()}
+                >
+                  <Printer size={15} />
+                  <span>{lang === "bn" ? "প্রিন্ট / PDF সংরক্ষণ" : "Print / Save PDF"}</span>
+                </button>
+                <button
+                  type="button"
+                  className="button secondary small close-btn"
+                  onClick={() => setShowInvoiceModal(false)}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+            <div className="invoice-modal-scrollable">
+              <AriseSellInvoice order={order} lang={lang} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {error && <ErrorBox message={error} />}
       <div className="purchase-grid">
         <div className="purchase-col-summary">

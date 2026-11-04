@@ -578,8 +578,8 @@ index 00000000..3ed97ddc
 +    line = {"line_key": str(uuid.uuid4()), "product_id": str(product.id), "variant_id": str(variant.id),
 +        "qty": req.quantity, "selection": [s.model_dump() for s in req.selection], "answers": answers,
 +        "answer_labels": {f["id"]: f["label"] for f in config["fields"]},
-+        "config_revision": revision(config), "design_labels": {d["code"]: d["label"] for d in rules.get("designs", [])},
-+        "design_assets": {d["code"]: d["asset_id"] for d in rules.get("designs", []) if d.get("asset_id")},
++        "config_revision": revision(config), "design_labels": {d["code"]: d["label"] for d in rules.get("designs", []) if d["code"] in {s.code for s in req.selection if s.qty > 0}},
++        "design_assets": {d["code"]: d["asset_id"] for d in rules.get("designs", []) if d.get("asset_id") and d["code"] in {s.code for s in req.selection if s.qty > 0}},
 +        **craft.package_fields(product, variant)}
 +    if artwork:
 +        line["artwork"] = {**artwork, "role": "print_artwork"}
