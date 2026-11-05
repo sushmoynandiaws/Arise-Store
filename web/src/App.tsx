@@ -68,6 +68,7 @@ import {
   Wallet,
   Info,
   Star,
+  Truck,
 } from "./icons.js";
 import {
   api,
@@ -87,6 +88,74 @@ import {
   canCheckout,
   shopType,
 } from "./api";
+
+const BD_DISTRICTS: { bn: string; en: string }[] = [
+  { bn: "ঢাকা", en: "Dhaka" },
+  { bn: "চট্টগ্রাম", en: "Chattogram" },
+  { bn: "সিলেট", en: "Sylhet" },
+  { bn: "রাজশাহী", en: "Rajshahi" },
+  { bn: "খুলনা", en: "Khulna" },
+  { bn: "বরিশাল", en: "Barishal" },
+  { bn: "রংপুর", en: "Rangpur" },
+  { bn: "ময়মনসিংহ", en: "Mymensingh" },
+  { bn: "গাজীপুর", en: "Gazipur" },
+  { bn: "নারায়ণগঞ্জ", en: "Narayanganj" },
+  { bn: "কুমিল্লা", en: "Cumilla" },
+  { bn: "কক্সবাজার", en: "Cox's Bazar" },
+  { bn: "বগুড়া", en: "Bogura" },
+  { bn: "যশোর", en: "Jashore" },
+  { bn: "দিনাজপুর", en: "Dinajpur" },
+  { bn: "ফরিদপুর", en: "Faridpur" },
+  { bn: "টাঙ্গাইল", en: "Tangail" },
+  { bn: "পাবনা", en: "Pabna" },
+  { bn: "নোয়াখালী", en: "Noakhali" },
+  { bn: "ফেনী", en: "Feni" },
+  { bn: "ব্রাহ্মণবাড়িয়া", en: "Brahmanbaria" },
+  { bn: "হবিগঞ্জ", en: "Habiganj" },
+  { bn: "মৌলভীবাজার", en: "Moulvibazar" },
+  { bn: "সুনামগঞ্জ", en: "Sunamganj" },
+  { bn: "কুষ্টিয়া", en: "Kushtia" },
+  { bn: "ঝিনাইদহ", en: "Jhenaidah" },
+  { bn: "সাতক্ষীরা", en: "Satkhira" },
+  { bn: "বাগেরহাট", en: "Bagerhat" },
+  { bn: "পটুয়াখালী", en: "Patuakhali" },
+  { bn: "ভোলা", en: "Bhola" },
+  { bn: "চাঁদপুর", en: "Chandpur" },
+  { bn: "লক্ষ্মীপুর", en: "Lakshmipur" },
+  { bn: "কিশোরগঞ্জ", en: "Kishoreganj" },
+  { bn: "মানিকগঞ্জ", en: "Manikganj" },
+  { bn: "মুন্সীগঞ্জ", en: "Munshiganj" },
+  { bn: "নরসিংদী", en: "Narsingdi" },
+  { bn: "মাদারীপুর", en: "Madaripur" },
+  { bn: "গোপালগঞ্জ", en: "Gopalganj" },
+  { bn: "শরীয়তপুর", en: "Shariatpur" },
+  { bn: "রাজবাড়ী", en: "Rajbari" },
+  { bn: "সিরাজগঞ্জ", en: "Sirajganj" },
+  { bn: "নাটোর", en: "Natore" },
+  { bn: "নওগাঁ", en: "Naogaon" },
+  { bn: "চাঁপাইনবাবগঞ্জ", en: "Chapai Nawabganj" },
+  { bn: "জয়পুরহাট", en: "Joypurhat" },
+  { bn: "গাইবান্ধা", en: "Gaibandha" },
+  { bn: "কুড়িগ্রাম", en: "Kurigram" },
+  { bn: "লালমনিরহাট", en: "Lalmonirhat" },
+  { bn: "নীলফামারী", en: "Nilphamari" },
+  { bn: "পঞ্চগড়", en: "Panchagarh" },
+  { bn: "ঠাকুরগাঁও", en: "Thakurgaon" },
+  { bn: "জামালপুর", en: "Jamalpur" },
+  { bn: "শেরপুর", en: "Sherpur" },
+  { bn: "নেত্রকোণা", en: "Netrokona" },
+  { bn: "পিরোজপুর", en: "Pirojpur" },
+  { bn: "ঝালকাঠি", en: "Jhalokati" },
+  { bn: "বরগুনা", en: "Barguna" },
+  { bn: "চুয়াডাঙ্গা", en: "Chuadanga" },
+  { bn: "মেহেরপুর", en: "Meherpur" },
+  { bn: "মাগুরা", en: "Magura" },
+  { bn: "নড়াইল", en: "Narail" },
+  { bn: "খাগড়াছড়ি", en: "Khagrachhari" },
+  { bn: "রাঙ্গামাটি", en: "Rangamati" },
+  { bn: "বান্দরবান", en: "Bandarban" }
+];
+
 import type { Catalog, Shop, Product, Session, Quote, Purchase } from "./types";
 import { nameSlug, productForRoute, productPath, productSection, type ProductSection } from "./product";
 import { ProductReviews, PurchaseReview, ShopReviews } from "./Reviews";
@@ -281,6 +350,9 @@ export function WishlistModal({
         <div className="modal-body wishlist-body">
           {items.length === 0 ? (
             <div className="empty-wishlist">
+              <div className="empty-icon">
+                <Heart size={28} />
+              </div>
               <p>{t("noSavedItems")}</p>
               <Link to="/products" className="button secondary" onClick={onClose}>
                 {t("browseProducts")}
@@ -330,6 +402,24 @@ export function WishlistModal({
 export function TrackOrderPage() {
   const { t, lang } = useLang();
   const { session } = useMarket();
+  const navigate = useNavigate();
+  const [trackRef, setTrackRef] = useState("");
+  const [trackError, setTrackError] = useState("");
+
+  function handleQuickTrack(e: React.FormEvent) {
+    e.preventDefault();
+    const val = trackRef.trim();
+    if (!val) {
+      setTrackError(lang === "bn" ? "অনুগ্রহ করে অর্ডার রেফারেন্স বা ট্র্যাকিং নম্বর লিখুন।" : "Please enter an order reference or tracking number.");
+      return;
+    }
+    if (val.startsWith("https://")) {
+      window.open(val, "_blank", "noopener,noreferrer");
+      return;
+    }
+    navigate(`/purchases/${encodeURIComponent(val)}`);
+  }
+
   return (
     <main id="main" className="container track-order-page">
       <header className="page-intro track-intro">
@@ -344,6 +434,24 @@ export function TrackOrderPage() {
             <p>{lang === "bn" ? "অর্ডার করার ব্রাউজারে আমার অর্ডারসমূহ খুলুন। অ্যাকাউন্টে সাইন ইন করে অর্ডার করলে একই অ্যাকাউন্ট ব্যবহার করুন।" : "Open My purchases in the browser used at checkout. If you ordered while signed in, use the same account."}</p>
             <Link className="button primary full-width" to="/purchases">{t("myPurchases")}<ArrowRight size={17} /></Link>
             <p className="notice">{lang === "bn" ? "ফোন বা ইমেইলের কোড দিয়ে অর্ডার পুনরুদ্ধার এখন উপলভ্য নয়।" : "Order recovery by phone or email code is unavailable."}</p>
+          </div>
+          <div className="quick-track-card">
+            <h3><Truck size={20} />{lang === "bn" ? "দ্রুত অর্ডার বা কুরিয়ার অনুসন্ধান" : "Quick Order or Courier Lookup"}</h3>
+            <p>{lang === "bn" ? "আপনার অর্ডার লিংক, রেফারেন্স বা কুরিয়ার ট্র্যাকিং নম্বর দিয়ে সরাসরি স্ট্যাটাস চেক করুন।" : "Directly check status with your order reference (ARS-XXXX), order ID or courier tracking code."}</p>
+            <form onSubmit={handleQuickTrack} className="quick-track-form">
+              <input
+                type="text"
+                className="quick-track-input"
+                aria-label={lang === "bn" ? "অর্ডার রেফারেন্স বা কুরিয়ার ট্র্যাকিং নম্বর" : "Order reference or courier tracking number"}
+                placeholder={lang === "bn" ? "রেফারেন্স বা ট্র্যাকিং নম্বর..." : "Reference or tracking code..."}
+                value={trackRef}
+                onChange={(e) => { setTrackRef(e.target.value); setTrackError(""); }}
+              />
+              <button type="submit" className="button secondary quick-track-btn">
+                {lang === "bn" ? "খুঁজুন" : "Track"}<ArrowRight size={16} />
+              </button>
+            </form>
+            {trackError && <p className="field-error" style={{ marginTop: "8px", color: "var(--danger)" }}>{trackError}</p>}
           </div>
         </section>
         <aside className="track-guidance" aria-label={lang === "bn" ? "অর্ডারের সহায়তা" : "Order help"}>
@@ -718,7 +826,7 @@ function Header() {
               aria-pressed={lang === "bn"}
               title="বাংলা ভাষা নির্বাচন করুন"
             >
-              বাং
+              বাংলা
             </button>
             <button
               type="button"
@@ -1472,6 +1580,7 @@ function Art({
           src={imageUrl}
           alt={product.name}
           loading="lazy"
+          decoding="async"
           referrerPolicy="no-referrer"
           onError={() => {
             setImgFailed(true);
@@ -1794,7 +1903,7 @@ function Home() {
         <FlashDeals catalog={catalog}/>
         <section className="hero container">
           <div className="hero-copy">
-            <p className="eyebrow">{lang === "bn" ? "মাল্টি-ভেন্ডর মার্কেটপ্লেস" : "MULTI-CATEGORY MARKETPLACE"}</p>
+            <p className="eyebrow">{lang === "bn" ? "আর্টিশান ক্রাফট ও ডিজিটাল স্টোর" : "Curated Digital & Artisan Craft"}</p>
             <h1>
               {platform.hero_title || (lang === "bn" ? (
                 <>স্বাধীন শপ থেকে<br />আপনার পছন্দের পণ্য</>
@@ -2587,20 +2696,45 @@ function ProductPage() {
             <button type="button" className="text-link" onClick={() => selectSection("overview")}>{lang === "bn" ? "সম্পূর্ণ বিবরণ পড়ুন" : "Read full description"} <ExternalLink size={14} /></button>
           </div>}
           {product.variants.length > 1 && (
-            <label className="field">
-              {lang === "bn" ? "অপশন বেছে নিন" : "Choose your option"}
-              <select
-                value={variant}
-                onChange={(e) => { setVariant(e.target.value); setQuantity(1); }}
-              >
-                {product.variants.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.name} · {money(v.price, product.currency)}
-                    {!v.stock ? (lang === "bn" ? " · স্টক শেষ" : " · Sold out") : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="product-variant-section">
+              <span className="field-label product-variant-label" style={{ fontWeight: 600, fontSize: "var(--text-body)", color: "var(--ink)", display: "block" }}>
+                {lang === "bn" ? "অপশন বেছে নিন" : "Choose your option"}
+              </span>
+              <label className="field sr-only" htmlFor="product-variant-select">
+                {lang === "bn" ? "অপশন বেছে নিন" : "Choose your option"}
+                <select
+                  id="product-variant-select"
+                  value={variant}
+                  onChange={(e) => { setVariant(e.target.value); setQuantity(1); }}
+                >
+                  {product.variants.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name} · {money(v.price, product.currency)}
+                      {!v.stock ? (lang === "bn" ? " · স্টক শেষ" : " · Sold out") : ""}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="variant-pill-grid" role="group" aria-label={lang === "bn" ? "ভ্যারিয়েন্টসমূহ" : "Product variants"}>
+                {product.variants.map((v) => {
+                  const isSelected = v.id === variant;
+                  const isOutOfStock = !v.stock;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      className={`variant-option-pill ${isSelected ? "selected" : ""} ${isOutOfStock ? "out-of-stock" : ""}`}
+                      onClick={() => { setVariant(v.id); setQuantity(1); }}
+                      title={`${v.name} - ${money(v.price, product.currency)}${isOutOfStock ? (lang === "bn" ? " (স্টক নেই)" : " (Sold out)") : ""}`}
+                    >
+                      <span className="variant-pill-name">{v.name}</span>
+                      <span className="variant-pill-price">{money(v.price, product.currency)}</span>
+                      {isOutOfStock && <span className="variant-pill-soldout">{lang === "bn" ? "শেষ" : "Sold out"}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           )}
           <div className="detail-availability">
             {available ? (
@@ -2646,37 +2780,46 @@ function ProductPage() {
               </div>
             </div>
             <div className="product-purchase-actions">
-              <div className="product-quantity" role="group" aria-label="Product quantity">
-                <button type="button" aria-label="Decrease quantity" disabled={!available || quantity <= 1}
-                  onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
-                <input aria-label="Quantity" type="number" min={1} max={Math.max(1, maximum)} step={1}
-                  disabled={!available} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
-                <button type="button" aria-label="Increase quantity" disabled={!available || quantity >= maximum}
-                  onClick={() => setQuantity(Math.min(maximum, quantity + 1))}>+</button>
+              <div className="purchase-tier-primary">
+                <div className="product-quantity" role="group" aria-label="Product quantity">
+                  <button type="button" aria-label="Decrease quantity" disabled={!available || quantity <= 1}
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}>−</button>
+                  <input aria-label="Quantity" type="number" min={1} max={Math.max(1, maximum)} step={1}
+                    disabled={!available} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
+                  <button type="button" aria-label="Increase quantity" disabled={!available || quantity >= maximum}
+                    onClick={() => setQuantity(Math.min(maximum, quantity + 1))}>+</button>
+                </div>
+                {canBuy && selected ? (
+                  <Link
+                    className="button primary buy-now"
+                    to={`/checkout/${product.id}?variant=${selected.id}&quantity=${quantity}${new URLSearchParams(location.search).get("coupon") ? `&coupon=${encodeURIComponent(new URLSearchParams(location.search).get("coupon")!)}` : ""}`}
+                  >
+                    {lang === "bn" ? "এখনই কিনুন" : "Buy now"}
+                    <ArrowRight size={18} />
+                  </Link>
+                ) : (
+                  <button className="button primary buy-now" disabled>
+                    {catalogError ? (lang === "bn" ? "তথ্য আপডেটের অপেক্ষায়" : "Waiting for updated details") : !available ? (product.sales_enabled ? (lang === "bn" ? "বর্তমানে স্টক নেই" : "Currently unavailable") : (lang === "bn" ? "বিক্রি সাময়িকভাবে বন্ধ" : "Purchases paused")) : (lang === "bn" ? "পরিমাণ চেক করুন" : "Check quantity")}
+                  </button>
+                )}
               </div>
-          {!product.custom_order && <button type="button" className="button secondary" disabled={!canBuy} onClick={() => selected && cart.add(product,selected.id,quantity)}>{lang === "bn" ? "ব্যাগে যোগ করুন" : "Add to bag"}</button>}
-          {canBuy && selected ? (
-            <Link
-              className="button primary buy-now"
-              to={`/checkout/${product.id}?variant=${selected.id}&quantity=${quantity}${new URLSearchParams(location.search).get("coupon") ? `&coupon=${encodeURIComponent(new URLSearchParams(location.search).get("coupon")!)}` : ""}`}
-            >
-              {lang === "bn" ? "এখনই কিনুন" : "Buy now"}
-              <ArrowRight size={18} />
-            </Link>
-          ) : (
-            <button className="button primary buy-now" disabled>
-              {catalogError ? (lang === "bn" ? "তথ্য আপডেটের অপেক্ষায়" : "Waiting for updated details") : !available ? (product.sales_enabled ? (lang === "bn" ? "বর্তমানে স্টক নেই" : "Currently unavailable") : (lang === "bn" ? "বিক্রি সাময়িকভাবে বন্ধ" : "Purchases paused")) : (lang === "bn" ? "পরিমাণ চেক করুন" : "Check quantity")}
-            </button>
-          )}
-              <button
-                type="button"
-                className={`button secondary button-wishlist ${isWishlisted(product.id) ? "active" : ""}`}
-                onClick={() => toggleWishlist(product.id)}
-                title={isWishlisted(product.id) ? "Remove from wishlist" : "Save for later"}
-              >
-                <Heart size={18} className={isWishlisted(product.id) ? "fill-heart" : ""} />
-                <span>{isWishlisted(product.id) ? (lang === "bn" ? "উইশলিস্টে যুক্ত" : "Saved") : (lang === "bn" ? "পরে কিনুন" : "Save")}</span>
-              </button>
+              <div className="purchase-tier-secondary">
+                {!product.custom_order && (
+                  <button type="button" className="button secondary add-to-bag-btn" disabled={!canBuy} onClick={() => selected && cart.add(product,selected.id,quantity)}>
+                    <ShoppingBag size={18} />
+                    <span>{lang === "bn" ? "ব্যাগে যোগ করুন" : "Add to bag"}</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={`button secondary button-wishlist ${isWishlisted(product.id) ? "active" : ""}`}
+                  onClick={() => toggleWishlist(product.id)}
+                  title={isWishlisted(product.id) ? "Remove from wishlist" : "Save for later"}
+                >
+                  <Heart size={18} className={isWishlisted(product.id) ? "fill-heart" : ""} />
+                  <span>{isWishlisted(product.id) ? (lang === "bn" ? "উইশলিস্টে যুক্ত" : "Saved") : (lang === "bn" ? "পরে কিনুন" : "Save")}</span>
+                </button>
+              </div>
             </div>
             {available && !catalogError && !canBuy && <p role="alert" className="product-quantity-error">Choose a whole quantity between 1 and {maximum}.</p>}
             <div className="product-policy-links">
@@ -2929,39 +3072,109 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
                       : field === "email"
                         ? (lang === "bn" ? "ইমেইল অ্যাড্রেস" : "Email address")
                         : (lang === "bn" ? "ফোন নম্বর" : "Phone number")}
-                    <input
-                      required
-                      name={field}
-                      autoComplete={
-                        field === "name"
-                          ? "name"
-                          : field === "email"
-                            ? "email"
-                            : "tel"
-                      }
-                      type={
-                        field === "email"
-                          ? "email"
-                          : field === "phone"
-                            ? "tel"
-                            : "text"
-                      }
-                      maxLength={
-                        field === "email" ? 255 : field === "phone" ? 32 : 100
-                      }
-                      value={fields[field]}
-                      onChange={(e) =>
-                        setFields({ ...fields, [field]: e.target.value })
-                      }
-                    />
+                    {field === "phone" ? (
+                      <div className="checkout-phone-container">
+                        <div className="checkout-phone-wrapper">
+                          <span className="checkout-phone-prefix" aria-hidden="true">+880</span>
+                          <input
+                            required
+                            name={field}
+                            autoComplete="tel"
+                            type="tel"
+                            className="checkout-phone-input"
+                            maxLength={32}
+                            placeholder="01XXXXXXXXX"
+                            value={fields[field]}
+                            onChange={(e) => setFields({ ...fields, [field]: e.target.value })}
+                          />
+                        </div>
+                        <small className="form-hint" style={{ marginTop: "4px", display: "block", color: "var(--muted)" }}>
+                          {lang === "bn" ? "১১ ডিজিটের সচল মোবাইল নম্বর (কুরিয়ার রাইডারের জন্য)" : "11-digit mobile number for courier rider"}
+                        </small>
+                      </div>
+                    ) : (
+                      <input
+                        required
+                        name={field}
+                        autoComplete={field === "name" ? "name" : "email"}
+                        type={field === "email" ? "email" : "text"}
+                        maxLength={field === "email" ? 255 : 100}
+                        value={fields[field]}
+                        onChange={(e) => setFields({ ...fields, [field]: e.target.value })}
+                      />
+                    )}
                   </label>
                 ))}
               {!digital && (["address", "district", "landmark", "alt_phone"] as const).filter(field => required.has(field)).map(field => (
                 <label className="field" key={field}>
                   {({address: lang === "bn" ? "ডেলিভারির সম্পূর্ণ ঠিকানা" : "Full delivery address", district: lang === "bn" ? "জেলা" : "District", landmark: lang === "bn" ? "কাছাকাছি পরিচিত স্থান" : "Nearby landmark", alt_phone: lang === "bn" ? "বিকল্প মোবাইল নম্বর" : "Alternative mobile number"})[field]}
-                  <input name={field} required autoComplete={field === "address" ? "street-address" : field === "district" ? "address-level2" : field === "alt_phone" ? "tel" : "off"}
-                    type={field === "alt_phone" ? "tel" : "text"} maxLength={field === "address" ? 4000 : field === "alt_phone" ? 32 : 128}
-                    value={fields[field]} onChange={e => setFields({...fields, [field]: e.target.value})} />
+                  {field === "district" ? (
+                    <>
+                      <input
+                        name={field}
+                        required
+                        list="bd-district-list"
+                        autoComplete="address-level2"
+                        maxLength={128}
+                        placeholder={lang === "bn" ? "যেমন: ঢাকা, চট্টগ্রাম, সিলেট..." : "e.g. Dhaka, Chattogram, Sylhet..."}
+                        value={fields[field]}
+                        onChange={e => setFields({...fields, [field]: e.target.value})}
+                      />
+                      <datalist id="bd-district-list">
+                        {BD_DISTRICTS.map(d => (
+                          <option key={d.en} value={lang === "bn" ? d.bn : d.en}>{d.bn} ({d.en})</option>
+                        ))}
+                      </datalist>
+                      <div className="district-quick-chips" aria-label={lang === "bn" ? "জনপ্রিয় জেলাসমূহ" : "Popular districts"}>
+                        {[
+                          { bn: "ঢাকা", en: "Dhaka" },
+                          { bn: "চট্টগ্রাম", en: "Chattogram" },
+                          { bn: "সিলেট", en: "Sylhet" },
+                          { bn: "রাজশাহী", en: "Rajshahi" },
+                          { bn: "খুলনা", en: "Khulna" }
+                        ].map((dItem) => {
+                          const label = lang === "bn" ? dItem.bn : dItem.en;
+                          const currentDist = (fields.district || "").toLowerCase();
+                          const isActive = currentDist.includes(dItem.bn.toLowerCase()) || currentDist.includes(dItem.en.toLowerCase());
+                          return (
+                            <button
+                              key={dItem.en}
+                              type="button"
+                              className={`district-chip ${isActive ? "active" : ""}`}
+                              onClick={() => setFields({ ...fields, district: label })}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : field === "alt_phone" ? (
+                    <div className="checkout-phone-wrapper">
+                      <span className="checkout-phone-prefix" aria-hidden="true">+880</span>
+                      <input
+                        name={field}
+                        required
+                        autoComplete="tel"
+                        type="tel"
+                        className="checkout-phone-input"
+                        maxLength={32}
+                        placeholder="01XXXXXXXXX"
+                        value={fields[field]}
+                        onChange={e => setFields({...fields, [field]: e.target.value})}
+                      />
+                    </div>
+                  ) : (
+                    <input
+                      name={field}
+                      required
+                      autoComplete={field === "address" ? "street-address" : "off"}
+                      type="text"
+                      maxLength={field === "address" ? 4000 : 128}
+                      value={fields[field]}
+                      onChange={e => setFields({...fields, [field]: e.target.value})}
+                    />
+                  )}
                 </label>
               ))}
               <label className="field">
@@ -4031,7 +4244,7 @@ function PurchasePage() {
               <CourierStatus order={order}/>
               {order.tracking?.tracking_url?.startsWith("https://") && (
                 <a className="button secondary" style={{ marginTop: "16px" }} href={order.tracking.tracking_url} target="_blank" rel="noopener noreferrer">
-                  Track with courier<ExternalLink size={16} />
+                  {lang === "bn" ? "কুরিয়ারে ট্র্যাক করুন" : "Track with courier"} <ExternalLink size={16} />
                 </a>
               )}
               {!order.ready && !cancelled && (
@@ -5145,6 +5358,7 @@ export default function App() {
           <Route path="/checkout/:id" element={<Checkout />} />
           <Route path="/purchases" element={<Purchases key={purchaseKey} />} />
           <Route path="/purchases/:id" element={<PurchasePage key={purchaseKey} />} />
+          <Route path="/orders/:id" element={<PurchasePage key={purchaseKey} />} />
           <Route path="/seller" element={<Seller key={sellerKey} />} />
           <Route path="/settings" element={<Seller key={sellerKey} settings />} />
           <Route path="/admin/*" element={<AdminEntry />} />

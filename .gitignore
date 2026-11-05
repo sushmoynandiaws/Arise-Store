@@ -15,3 +15,10 @@ __pycache__/
 /artifacts/
 /.agents/
 skills-lock.json
+/ci-evidence/
+
+/.codex/
+/.github/agents/
+/.github/hooks/
+/.github/skills/
+*.exe

@@ -19,7 +19,7 @@ import {
 } from "./api";
 import { productForRoute, productPath } from "./product";
 import { useLang } from "./i18n";
-import { ShoppingCart, X, ShieldCheck } from "./icons";
+import { ShoppingCart, X, ShieldCheck, ShoppingBag, Minus, Plus, Trash2, Truck, Check, Package } from "./icons";
 import type {
   CartLine,
   Catalog,
@@ -31,41 +31,82 @@ import type {
 
 export function CourierStatus({ order }: { order: Purchase }) {
   const { lang } = useLang();
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const bn = lang === "bn";
   const tracking = order.tracking;
   if (order.fulfilment_kind !== "physical") return null;
+
+  const status = tracking?.status || order.delivery_status || "confirmed";
+  let activeStep = 1;
+  if (["courier_booked", "booked", "awaiting_pickup", "pickup_pending"].includes(status)) activeStep = 2;
+  else if (["in_transit", "out_for_delivery"].includes(status)) activeStep = 3;
+  else if (["delivered", "settled"].includes(status)) activeStep = 4;
+
+  const steps = [
+    { title: bn ? "অর্ডার নিশ্চিত" : "Order confirmed", desc: bn ? "বিক্রেতা গ্রহণ করেছেন" : "Seller accepted" },
+    { title: bn ? "কুরিয়ারে হস্তান্তর" : "Handed to courier", desc: tracking?.provider ? `${tracking.provider}` : (bn ? "পিকআপ সম্পন্ন" : "Picked up") },
+    { title: bn ? "ডেলিভারির পথে" : "In transit", desc: bn ? "গন্তব্যে যাত্রা করছে" : "On the way" },
+    { title: bn ? "ডেলিভারি সম্পন্ন" : "Delivered", desc: bn ? "পণ্য পৌঁছেছে" : "Delivered" },
+  ];
+
   return (
-    <div className="courier-status">
-      <strong>
-        {deliveryLabel(tracking?.status || order.delivery_status, lang)}
-      </strong>
-      {tracking ? (
-        <>
-          <p>
-            {tracking.provider} · {lang === "bn" ? "ট্র্যাকিং নম্বর:" : "Tracking number:"} {tracking.tracking}
-          </p>
-          {tracking.updated_at && (
-            <small>
-              {lang === "bn" ? "সর্বশেষ আপডেট:" : "Last source update:"}{" "}
-              {new Date(tracking.updated_at).toLocaleString(lang === "bn" ? "bn-BD" : undefined)}
-            </small>
+    <div className="courier-status-card">
+      <div className="courier-status-header">
+        <div className="courier-badge-row">
+          <span className="courier-provider-tag">
+            <Truck size={15} />
+            {tracking?.provider || (bn ? "কুরিয়ার পার্সেল" : "Courier Parcel")}
+          </span>
+          {tracking?.tracking && (
+            <span className="courier-tracking-code">
+              {bn ? "ট্র্যাকিং:" : "Tracking:"} <strong>{tracking.tracking}</strong>
+            </span>
           )}
+        </div>
+        <div className="courier-current-status">
+          <span className="status-live-dot" />
+          <strong>{deliveryLabel(status, lang)}</strong>
+        </div>
+      </div>
+
+      <div className="courier-milestone-stepper" role="progressbar" aria-valuenow={activeStep} aria-valuemin={1} aria-valuemax={4}>
+        {steps.map((s, idx) => {
+          const stepNum = idx + 1;
+          const isDone = activeStep > stepNum;
+          const isCurrent = activeStep === stepNum;
+          return (
+            <div key={s.title} className={`stepper-node ${isDone ? "is-done" : ""} ${isCurrent ? "is-current" : ""}`}>
+              <div className="stepper-marker">
+                {isDone ? <Check size={14} /> : <span>{stepNum}</span>}
+              </div>
+              <div className="stepper-labels">
+                <strong>{s.title}</strong>
+                <small>{s.desc}</small>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {tracking?.updated_at && (
+        <div className="courier-meta-footer">
+          <small>
+            {bn ? "সর্বশেষ আপডেট:" : "Last update:"}{" "}
+            {new Date(tracking.updated_at).toLocaleString(bn ? "bn-BD" : undefined)}
+          </small>
           {tracking.poll_delayed && (
-            <p role="status">
-              {lang === "bn" ? "কুরিয়ার সিঙ্ক হতে কিছুটা বিলম্ব হচ্ছে। সর্বশেষ নিশ্চিত স্ট্যাটাস দেখানো হচ্ছে।" : "Courier sync is delayed. Showing the last confirmed status."}
-            </p>
+            <span className="poll-delay-notice" role="status">
+              {bn ? "কুরিয়ার সিঙ্ক হচ্ছে…" : "Syncing latest update…"}
+            </span>
           )}
-        </>
-      ) : (
-        <p>{lang === "bn" ? "বিক্রেতা কুরিয়ার বুক করার পর ট্র্যাকিং তথ্য দেখা যাবে।" : "Tracking appears after the seller books a courier."}</p>
+        </div>
       )}
-      <small>
-        {lang === "bn" ? "কুরিয়ার আপডেট AriseSell থেকে সিঙ্ক হয়। প্রোভাইডার আপডেট আসতে কিছুটা সময় লাগতে পারে।" : "Courier updates are synced by AriseSell. Provider updates can take time to appear."}
-      </small>
     </div>
   );
 }
 export function LiveTracking({ ready }: { ready: boolean }) {
   const { lang } = useLang();
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
   const [orders, setOrders] = useState<Purchase[]>([]),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -193,6 +234,7 @@ export function CartProvider({
     [error, setError] = useState("");
   const dialog = useRef<HTMLDialogElement>(null);
   const { lang } = useLang();
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
   useEffect(() => {
     persist(CART, items);
   }, [items]);
@@ -356,11 +398,23 @@ export function CartProvider({
           </p>
         )}
         {!items.length ? (
-          <p>
-            {lang === "bn"
-              ? "ব্যাগে এখনও কোনো পণ্য নেই।"
-              : "Your bag is empty."}
-          </p>
+          <div className="cart-empty-state">
+            <div className="empty-icon">
+              <ShoppingBag size={28} />
+            </div>
+            <p>
+              {lang === "bn"
+                ? "ব্যাগে এখনও কোনো পণ্য যোগ করা হয়নি।"
+                : "Your shopping bag is empty."}
+            </p>
+            <Link
+              to="/products"
+              className="button primary small"
+              onClick={() => setShown(false)}
+            >
+              {lang === "bn" ? "পণ্য দেখুন" : "Browse products"}
+            </Link>
+          </div>
         ) : (
           <>
             <p>
@@ -372,67 +426,100 @@ export function CartProvider({
             <ul className="bag-lines">
               {rows.map((row) => (
                 <li key={row.variant_id}>
-                  {row.product ? (
-                    <Link
-                      onClick={() => setShown(false)}
-                      to={productPath(row.product, catalog!)}
-                    >
-                      {row.product.name}
-                    </Link>
-                  ) : (
-                    <strong>
-                      {lang === "bn"
-                        ? "পণ্যটি আর পাওয়া যাচ্ছে না"
-                        : "Product no longer available"}
-                    </strong>
-                  )}
-                  <span>
-                    {row.variant?.name} ·{" "}
-                    {row.variant
-                      ? money(row.variant.price, row.product?.currency)
-                      : lang === "bn"
-                        ? "অনুপলব্ধ অপশন"
-                        : "Unavailable option"}
-                  </span>
-                  <div className="bag-line-actions">
-                    <label>
-                      {lang === "bn" ? "পরিমাণ" : "Quantity"}
-                      <input
-                        aria-label={`Quantity for ${row.product?.name || row.variant_id}`}
-                        type="number"
-                        min={1}
-                        max={Math.min(100, row.variant?.stock || 100)}
-                        value={row.quantity}
-                        onChange={(event) => {
-                          const quantity = Number(event.target.value);
-                          if (
-                            Number.isInteger(quantity) &&
-                            quantity >= 1 &&
-                            quantity <= 100
+                  <div className="bag-line-thumb" aria-hidden="true">
+                    {row.product?.image_url ? (
+                      <img src={row.product.image_url} alt="" loading="lazy" />
+                    ) : (
+                      <Package size={22} />
+                    )}
+                  </div>
+                  <div className="bag-line-content">
+                    {row.product ? (
+                      <Link
+                        className="bag-line-title"
+                        onClick={() => setShown(false)}
+                        to={productPath(row.product, catalog!)}
+                      >
+                        {row.product.name}
+                      </Link>
+                    ) : (
+                      <strong>
+                        {lang === "bn"
+                          ? "পণ্যটি আর পাওয়া যাচ্ছে না"
+                          : "Product no longer available"}
+                      </strong>
+                    )}
+                    <div className="bag-line-meta">
+                      <span className="bag-line-variant">{row.variant?.name}</span>
+                      <span className="bag-line-price">
+                        {row.variant
+                          ? money(row.variant.price, row.product?.currency)
+                          : lang === "bn"
+                            ? "অনুপলব্ধ"
+                            : "Unavailable"}
+                      </span>
+                      <span className="bag-line-kind">
+                        {row.product?.fulfilment_kind === "digital"
+                          ? (lang === "bn" ? "ডিজিটাল ডেলিভারি" : "Digital")
+                          : (lang === "bn" ? "কুরিয়ার পার্সেল" : "Courier")}
+                      </span>
+                    </div>
+                    <div className="bag-line-actions">
+                      <div className="cart-stepper-control" role="group" aria-label={`Quantity for ${row.product?.name || row.variant_id}`}>
+                        <button
+                          type="button"
+                          className="cart-stepper-btn"
+                          aria-label={lang === "bn" ? "পরিমাণ কমান" : "Decrease quantity"}
+                          disabled={row.quantity <= 1}
+                          onClick={() => {
+                            if (row.quantity > 1) {
+                              setItems((previous) =>
+                                previous.map((item) =>
+                                  item.variant_id === row.variant_id
+                                    ? { ...item, quantity: item.quantity - 1 }
+                                    : item,
+                                ),
+                              );
+                            }
+                          }}
+                        >
+                          <Minus size={15} />
+                        </button>
+                        <span className="cart-stepper-val">{row.quantity}</span>
+                        <button
+                          type="button"
+                          className="cart-stepper-btn"
+                          aria-label={lang === "bn" ? "পরিমাণ বাড়ান" : "Increase quantity"}
+                          disabled={row.quantity >= Math.min(100, row.variant?.stock || 100)}
+                          onClick={() => {
+                            if (row.quantity < Math.min(100, row.variant?.stock || 100)) {
+                              setItems((previous) =>
+                                previous.map((item) =>
+                                  item.variant_id === row.variant_id
+                                    ? { ...item, quantity: item.quantity + 1 }
+                                    : item,
+                                ),
+                              );
+                            }
+                          }}
+                        >
+                          <Plus size={15} />
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className="bag-remove-btn text-link"
+                        onClick={() =>
+                          setItems((previous) =>
+                            previous.filter(
+                              (item) => item.variant_id !== row.variant_id,
+                            ),
                           )
-                            setItems((previous) =>
-                              previous.map((item) =>
-                                item.variant_id === row.variant_id
-                                  ? { ...item, quantity }
-                                  : item,
-                              ),
-                            );
-                        }}
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      className="text-link"
-                      onClick={() =>
-                        setItems((previous) =>
-                          previous.filter(
-                            (item) => item.variant_id !== row.variant_id,
-                          ),
-                        )
-                      }
-                    >
-                      {lang === "bn" ? "সরান" : "Remove"}
-                    </button>
+                        }
+                      >
+                        {lang === "bn" ? "সরান" : "Remove"}
+                      </button>
+                    </div>
                   </div>
                 </li>
               ))}
@@ -461,16 +548,42 @@ export function CartProvider({
                 {lang === "bn" ? "চেকআউট অনুপলব্ধ" : "Checkout unavailable"}
               </button>
             )}
-            <button
-              type="button"
-              className="button secondary full-width"
-              onClick={() => {
-                setItems([]);
-                setError("");
-              }}
-            >
-              {lang === "bn" ? "ব্যাগ খালি করুন" : "Empty bag"}
-            </button>
+            <div className="cart-footer-actions">
+              {confirmEmpty ? (
+                <div className="confirm-empty-row" role="alert">
+                  <span>{lang === "bn" ? "ব্যাগ খালি করবেন?" : "Empty entire bag?"}</span>
+                  <div className="confirm-empty-buttons">
+                    <button
+                      type="button"
+                      className="button danger-small"
+                      onClick={() => {
+                        setItems([]);
+                        setError("");
+                        setConfirmEmpty(false);
+                      }}
+                    >
+                      {lang === "bn" ? "হ্যাঁ, খালি করুন" : "Yes, empty"}
+                    </button>
+                    <button
+                      type="button"
+                      className="button secondary-small"
+                      onClick={() => setConfirmEmpty(false)}
+                    >
+                      {lang === "bn" ? "না" : "Cancel"}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  className="bag-empty-quiet-btn"
+                  onClick={() => setConfirmEmpty(true)}
+                >
+                  <Trash2 size={14} />
+                  <span>{lang === "bn" ? "ব্যাগ খালি করুন" : "Empty bag"}</span>
+                </button>
+              )}
+            </div>
           </>
         )}
       </dialog>
@@ -480,6 +593,7 @@ export function CartProvider({
 export function CartButton() {
   const cart = useCart();
   const { lang } = useLang();
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
   return (
     <button
       type="button"
@@ -513,6 +627,7 @@ export function RecentlyViewed({
 }) {
   const { pathname } = useLocation();
   const { lang } = useLang();
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
   const [ids, setIds] = useState<string[]>([]);
   useEffect(() => {
     const value = stored<unknown>(RECENT, []);
@@ -574,6 +689,7 @@ export function ShopBadge({ shop }: { shop: Shop }) {
 }
 export function OfferCountdown({ end }: { end: string }) {
   const { lang } = useLang();
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -601,6 +717,7 @@ export function FlashDeals({
   shopId?: string;
 }) {
   const { lang } = useLang();
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -740,6 +857,7 @@ export type Question = {
 };
 export function ProductQuestions({ productId }: { productId: string }) {
   const { lang } = useLang();
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
   const [items, setItems] = useState<Question[]>([]),
     [more, setMore] = useState(false),
     [error, setError] = useState(""),
