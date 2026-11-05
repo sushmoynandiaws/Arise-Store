@@ -38,7 +38,7 @@ function ResultCard({product, match, shop, catalog, choose, close}: {product: Pr
           <span className="assistant-product-stock">
             {selected.stock > 0 ? (bn ? `স্টক: ${selected.stock}` : `Stock: ${selected.stock}`) : (bn ? "স্টক শেষ" : "Sold out")}
           </span>
-          <span className="assistant-product-badge">
+          <span className={`assistant-product-badge ${product.fulfilment_kind === "digital" ? "is-digital" : "is-courier"}`}>
             {product.fulfilment_kind === "digital" ? (bn ? "ডিজিটাল" : "Digital") : (bn ? "কুরিয়ার" : "Parcel")}
           </span>
         </div>

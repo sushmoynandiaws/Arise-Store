@@ -458,7 +458,7 @@ export function CartProvider({
                             ? "অনুপলব্ধ"
                             : "Unavailable"}
                       </span>
-                      <span className="bag-line-kind">
+                      <span className={`bag-line-kind ${row.product?.fulfilment_kind === "digital" ? "is-digital" : "is-courier"}`}>
                         {row.product?.fulfilment_kind === "digital"
                           ? (lang === "bn" ? "ডিজিটাল ডেলিভারি" : "Digital")
                           : (lang === "bn" ? "কুরিয়ার পার্সেল" : "Courier")}

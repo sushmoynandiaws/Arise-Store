@@ -2749,14 +2749,14 @@ function ProductPage() {
 
           <div className="product-trust-stats-badges">
             <div className="trust-stat-badge">
-              <Package size={18} />
+              <Package size={18} className="trust-icon-delivery" />
               <div>
                 <strong>{lang === "bn" ? "ডেলিভারি" : "Delivery"}</strong>
                 <small>{product.delivery_estimate || (digital ? (lang === "bn" ? "পেমেন্ট যাচাইয়ের পর" : "After payment verification") : (lang === "bn" ? "চেকআউটে ডেলিভারি চার্জ দেখুন" : "Shipping confirmed at checkout"))}</small>
               </div>
             </div>
             {product.warranty_type && <div className="trust-stat-badge">
-              <ShieldCheck size={18} />
+              <ShieldCheck size={18} className="trust-icon-warranty" />
               <div>
                 <strong>{lang === "bn" ? "ওয়ারেন্টি" : "Warranty"}</strong>
                 <small>{product.warranty_type === "no_warranty"
