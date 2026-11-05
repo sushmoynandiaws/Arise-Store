@@ -204,7 +204,7 @@ export function ShoppingAssistant({catalog, shop}: {catalog: Catalog; shop: Shop
         className="button primary assistant-launch"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        aria-label={bn ? "AI কনসিয়ার্জ সহকারী" : "AI Concierge assistant"}
+        aria-label={bn ? "AI সহকারী" : "AI assistant"}
       >
         <Sparkles size={21} />
         <span>

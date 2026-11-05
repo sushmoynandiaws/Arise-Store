@@ -91,7 +91,7 @@ export function CourierStatus({ order }: { order: Purchase }) {
       {tracking?.updated_at && (
         <div className="courier-meta-footer">
           <small>
-            {bn ? "সর্বশেষ আপডেট:" : "Last update:"}{" "}
+            {bn ? "সর্বশেষ আপডেট:" : "Last source update:"}{" "}
             {new Date(tracking.updated_at).toLocaleString(bn ? "bn-BD" : undefined)}
           </small>
           {tracking.poll_delayed && (
@@ -485,7 +485,34 @@ export function CartProvider({
                         >
                           <Minus size={15} />
                         </button>
-                        <span className="cart-stepper-val">{row.quantity}</span>
+                        <input
+                          type="number"
+                          className="cart-stepper-val"
+                          min="1"
+                          max={Math.min(100, row.variant?.stock || 100)}
+                          value={row.quantity}
+                          aria-label={
+                            lang === "bn"
+                              ? `${row.product?.name || row.variant_id} এর পরিমাণ`
+                              : `Quantity for ${row.product?.name || row.variant_id}`
+                          }
+                          onChange={(e) => {
+                            const quantity = Math.max(
+                              1,
+                              Math.min(
+                                Number(e.target.value) || 1,
+                                Math.min(100, row.variant?.stock || 100),
+                              ),
+                            );
+                            setItems((previous) =>
+                              previous.map((item) =>
+                                item.variant_id === row.variant_id
+                                  ? { ...item, quantity }
+                                  : item,
+                              ),
+                            );
+                          }}
+                        />
                         <button
                           type="button"
                           className="cart-stepper-btn"

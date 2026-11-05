@@ -826,7 +826,7 @@ function Header() {
               aria-pressed={lang === "bn"}
               title="বাংলা ভাষা নির্বাচন করুন"
             >
-              বাংলা
+              বাং
             </button>
             <button
               type="button"
@@ -3072,111 +3072,127 @@ function CheckoutDetails({craftUnitPrice}: {craftUnitPrice?: string} = {}) {
                       : field === "email"
                         ? (lang === "bn" ? "ইমেইল অ্যাড্রেস" : "Email address")
                         : (lang === "bn" ? "ফোন নম্বর" : "Phone number")}
-                    {field === "phone" ? (
-                      <div className="checkout-phone-container">
-                        <div className="checkout-phone-wrapper">
-                          <span className="checkout-phone-prefix" aria-hidden="true">+880</span>
-                          <input
-                            required
-                            name={field}
-                            autoComplete="tel"
-                            type="tel"
-                            className="checkout-phone-input"
-                            maxLength={32}
-                            placeholder="01XXXXXXXXX"
-                            value={fields[field]}
-                            onChange={(e) => setFields({ ...fields, [field]: e.target.value })}
-                          />
-                        </div>
-                        <small className="form-hint" style={{ marginTop: "4px", display: "block", color: "var(--muted)" }}>
-                          {lang === "bn" ? "১১ ডিজিটের সচল মোবাইল নম্বর (কুরিয়ার রাইডারের জন্য)" : "11-digit mobile number for courier rider"}
-                        </small>
-                      </div>
-                    ) : (
-                      <input
-                        required
-                        name={field}
-                        autoComplete={field === "name" ? "name" : "email"}
-                        type={field === "email" ? "email" : "text"}
-                        maxLength={field === "email" ? 255 : 100}
-                        value={fields[field]}
-                        onChange={(e) => setFields({ ...fields, [field]: e.target.value })}
-                      />
-                    )}
+                    <input
+                      required
+                      name={field}
+                      autoComplete={
+                        field === "name"
+                          ? "name"
+                          : field === "email"
+                            ? "email"
+                            : "tel"
+                      }
+                      type={
+                        field === "email"
+                          ? "email"
+                          : field === "phone"
+                            ? "tel"
+                            : "text"
+                      }
+                      maxLength={
+                        field === "email" ? 255 : field === "phone" ? 32 : 100
+                      }
+                      placeholder={field === "phone" ? "01XXXXXXXXX" : undefined}
+                      value={fields[field]}
+                      onChange={(e) =>
+                        setFields({ ...fields, [field]: e.target.value })
+                      }
+                    />
                   </label>
                 ))}
-              {!digital && (["address", "district", "landmark", "alt_phone"] as const).filter(field => required.has(field)).map(field => (
-                <label className="field" key={field}>
-                  {({address: lang === "bn" ? "ডেলিভারির সম্পূর্ণ ঠিকানা" : "Full delivery address", district: lang === "bn" ? "জেলা" : "District", landmark: lang === "bn" ? "কাছাকাছি পরিচিত স্থান" : "Nearby landmark", alt_phone: lang === "bn" ? "বিকল্প মোবাইল নম্বর" : "Alternative mobile number"})[field]}
-                  {field === "district" ? (
-                    <>
-                      <input
-                        name={field}
-                        required
-                        list="bd-district-list"
-                        autoComplete="address-level2"
-                        maxLength={128}
-                        placeholder={lang === "bn" ? "যেমন: ঢাকা, চট্টগ্রাম, সিলেট..." : "e.g. Dhaka, Chattogram, Sylhet..."}
-                        value={fields[field]}
-                        onChange={e => setFields({...fields, [field]: e.target.value})}
-                      />
-                      <datalist id="bd-district-list">
-                        {BD_DISTRICTS.map(d => (
-                          <option key={d.en} value={lang === "bn" ? d.bn : d.en}>{d.bn} ({d.en})</option>
-                        ))}
-                      </datalist>
-                      <div className="district-quick-chips" aria-label={lang === "bn" ? "জনপ্রিয় জেলাসমূহ" : "Popular districts"}>
-                        {[
-                          { bn: "ঢাকা", en: "Dhaka" },
-                          { bn: "চট্টগ্রাম", en: "Chattogram" },
-                          { bn: "সিলেট", en: "Sylhet" },
-                          { bn: "রাজশাহী", en: "Rajshahi" },
-                          { bn: "খুলনা", en: "Khulna" }
-                        ].map((dItem) => {
-                          const label = lang === "bn" ? dItem.bn : dItem.en;
-                          const currentDist = (fields.district || "").toLowerCase();
-                          const isActive = currentDist.includes(dItem.bn.toLowerCase()) || currentDist.includes(dItem.en.toLowerCase());
-                          return (
-                            <button
-                              key={dItem.en}
-                              type="button"
-                              className={`district-chip ${isActive ? "active" : ""}`}
-                              onClick={() => setFields({ ...fields, district: label })}
-                            >
-                              {label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </>
-                  ) : field === "alt_phone" ? (
-                    <div className="checkout-phone-wrapper">
-                      <span className="checkout-phone-prefix" aria-hidden="true">+880</span>
-                      <input
-                        name={field}
-                        required
-                        autoComplete="tel"
-                        type="tel"
-                        className="checkout-phone-input"
-                        maxLength={32}
-                        placeholder="01XXXXXXXXX"
-                        value={fields[field]}
-                        onChange={e => setFields({...fields, [field]: e.target.value})}
-                      />
+              {!digital &&
+                (["address", "district", "landmark", "alt_phone"] as const)
+                  .filter((field) => required.has(field))
+                  .map((field) => (
+                    <div key={field}>
+                      <label className="field">
+                        {({
+                          address:
+                            lang === "bn"
+                              ? "ডেলিভারির সম্পূর্ণ ঠিকানা"
+                              : "Full delivery address",
+                          district: lang === "bn" ? "জেলা" : "District",
+                          landmark:
+                            lang === "bn"
+                              ? "কাছাকাছি পরিচিত স্থান"
+                              : "Nearby landmark",
+                          alt_phone:
+                            lang === "bn"
+                              ? "বিকল্প মোবাইল নম্বর"
+                              : "Alternative mobile number",
+                        })[field]}
+                        <input
+                          name={field}
+                          required
+                          list={field === "district" ? "bd-district-list" : undefined}
+                          autoComplete={
+                            field === "address"
+                              ? "street-address"
+                              : field === "district"
+                                ? "address-level2"
+                                : field === "alt_phone"
+                                  ? "tel"
+                                  : "off"
+                          }
+                          type={field === "alt_phone" ? "tel" : "text"}
+                          maxLength={
+                            field === "address"
+                              ? 4000
+                              : field === "alt_phone"
+                                ? 32
+                                : 128
+                          }
+                          placeholder={
+                            field === "district"
+                              ? (lang === "bn" ? "যেমন: ঢাকা, চট্টগ্রাম, সিলেট..." : "e.g. Dhaka, Chattogram, Sylhet...")
+                              : field === "alt_phone"
+                                ? "01XXXXXXXXX"
+                                : undefined
+                          }
+                          value={fields[field]}
+                          onChange={(e) =>
+                            setFields({ ...fields, [field]: e.target.value })
+                          }
+                        />
+                      </label>
+                      {field === "district" && (
+                        <>
+                          <datalist id="bd-district-list">
+                            {BD_DISTRICTS.map((d) => (
+                              <option key={d.en} value={lang === "bn" ? d.bn : d.en}>
+                                {d.bn} ({d.en})
+                              </option>
+                            ))}
+                          </datalist>
+                          <div className="district-quick-chips" aria-label={lang === "bn" ? "জনপ্রিয় জেলাসমূহ" : "Popular districts"}>
+                            {[
+                              { bn: "ঢাকা", en: "Dhaka" },
+                              { bn: "চট্টগ্রাম", en: "Chattogram" },
+                              { bn: "সিলেট", en: "Sylhet" },
+                              { bn: "রাজশাহী", en: "Rajshahi" },
+                              { bn: "খুলনা", en: "Khulna" },
+                            ].map((dItem) => {
+                              const label = lang === "bn" ? dItem.bn : dItem.en;
+                              const currentDist = (fields.district || "").toLowerCase();
+                              const isActive =
+                                currentDist.includes(dItem.bn.toLowerCase()) ||
+                                currentDist.includes(dItem.en.toLowerCase());
+                              return (
+                                <button
+                                  key={dItem.en}
+                                  type="button"
+                                  className={`district-chip ${isActive ? "active" : ""}`}
+                                  onClick={() => setFields({ ...fields, district: label })}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      )}
                     </div>
-                  ) : (
-                    <input
-                      name={field}
-                      required
-                      autoComplete={field === "address" ? "street-address" : "off"}
-                      type="text"
-                      maxLength={field === "address" ? 4000 : 128}
-                      value={fields[field]}
-                      onChange={e => setFields({...fields, [field]: e.target.value})}
-                    />
-                  )}
-                </label>
-              ))}
+                  ))}
               <label className="field">
                 {!digital && <span>{lang === "bn" ? "অর্ডার নোট (ঐচ্ছিক)" : "Order note (optional)"}</span>}
                 {digital && (product.delivery_mode === "manual"
