@@ -3,7 +3,7 @@ import {Link} from "react-router-dom";
 import {api, canCheckout, money} from "./api";
 import {productPath} from "./product";
 import {useLang} from "./i18n";
-import {Sparkles, X, ArrowUp, Mic, Package, ExternalLink} from "./icons";
+import {Sparkles, X, ArrowUp, Mic} from "./icons";
 import type {Catalog, Product, Shop} from "./types";
 
 type Match = {product_id: string; variant_ids: string[]; product: Product};
@@ -17,49 +17,45 @@ type VoiceWindow = Window & {SpeechRecognition?: new () => Recognition; webkitSp
 function ResultCard({product, match, shop, catalog, choose, close}: {product: Product; match: Match; shop: Shop; catalog: Catalog; choose: () => void; close: () => void}) {
   const {lang} = useLang(), bn = lang === "bn";
   const variants = product.variants.filter(v => match.variant_ids.includes(v.id) && v.stock >= 0);
-  const selected = variants[0] || product.variants[0];
+  const [variantId, setVariant] = useState(variants[0]?.id || product.variants[0]?.id);
+  const selected = product.variants.find(v => v.id === variantId) || variants[0] || product.variants[0];
   if (!selected) return null;
 
   return (
-    <article className="assistant-product-compact">
-      <div className="assistant-product-thumb" aria-hidden="true">
-        {product.image_url ? (
-          <img src={product.image_url} alt="" loading="lazy" />
-        ) : (
-          <Package size={22} />
+    <article className="assistant-product">
+      {product.image_url && <img src={product.image_url} alt="" loading="lazy" />}
+      <div>
+        <Link to={productPath(product, catalog)} onClick={close}>{product.name}</Link>
+        <small>{shop.name}</small>
+        {product.description && (
+          <p>{product.description.length > 180 ? product.description.slice(0, 180) + "…" : product.description}</p>
         )}
-      </div>
-      <div className="assistant-product-info">
-        <Link className="assistant-product-title" to={productPath(product, catalog)} onClick={close}>
-          {product.name}
-        </Link>
-        <div className="assistant-product-meta">
-          <strong className="assistant-product-price">{money(selected.price, product.currency)}</strong>
-          <span className="assistant-product-stock">
-            {selected.stock > 0 ? (bn ? `স্টক: ${selected.stock}` : `Stock: ${selected.stock}`) : (bn ? "স্টক শেষ" : "Sold out")}
-          </span>
-          <span className={`assistant-product-badge ${product.fulfilment_kind === "digital" ? "is-digital" : "is-courier"}`}>
-            {product.fulfilment_kind === "digital" ? (bn ? "ডিজিটাল" : "Digital") : (bn ? "কুরিয়ার" : "Parcel")}
-          </span>
-        </div>
-        <div className="assistant-product-actions">
-          {selected.stock > 0 && canCheckout(product, shop) ? (
-            <Link
-              className="button primary-small"
-              to={`/checkout/${product.id}?variant=${selected.id}&quantity=1`}
-              onClick={close}
-            >
-              {product.custom_order ? (bn ? "কাস্টমাইজ" : "Customize") : (bn ? "চেকআউট" : "Checkout")}
-            </Link>
-          ) : (
-            <Link className="button secondary-small" to={productPath(product, catalog)} onClick={close}>
-              {bn ? "বিস্তারিত দেখুন" : "View details"}
-            </Link>
-          )}
-          <button type="button" className="button ghost-small" onClick={choose}>
-            {bn ? "এই বিষয়ে প্রশ্ন" : "Ask about this"}
-          </button>
-        </div>
+        {(product.size_chart || (product.description && product.description.length > 180)) && (
+          <details className="assistant-product-details">
+            <summary>{bn ? "পণ্যের বিস্তারিত" : "Product details"}</summary>
+            {product.description && product.description.length > 180 && <p className="preserve-lines">{product.description}</p>}
+            {product.size_chart && <p className="preserve-lines">{product.size_chart}</p>}
+          </details>
+        )}
+        <label className="field">
+          {bn ? "অপশন" : "Option"}
+          <select aria-label={`${product.name} ${bn ? "অপশন" : "option"}`} value={variantId} onChange={e => setVariant(e.target.value)}>
+            {product.variants.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+          </select>
+        </label>
+        <p><strong>{money(selected.price, product.currency)}</strong> · {bn ? "স্টক" : "Stock"}: {selected.stock}</p>
+        {selected.stock === 0 ? (
+          <p>{bn ? "এই অপশন এখন স্টকে নেই" : "This option is out of stock"}</p>
+        ) : canCheckout(product, shop) ? (
+          <Link className="button primary" to={`/checkout/${product.id}?variant=${selected.id}&quantity=1`} onClick={close}>
+            {product.custom_order ? (bn ? "কাস্টমাইজ করুন" : "Customize") : (bn ? "চেকআউট" : "Checkout")}
+          </Link>
+        ) : (
+          <p>{product.checkout_unavailable_reason || (bn ? "কেনার নিয়ম জানতে বিক্রেতার সাথে যোগাযোগ করুন।" : "Contact the seller to check how to order.")}</p>
+        )}
+        <button type="button" className="button secondary" onClick={choose}>
+          {bn ? "এই পণ্য নিয়ে কথা বলুন" : "Ask about this product"}
+        </button>
       </div>
     </article>
   );
@@ -398,8 +394,8 @@ export function ShoppingAssistant({catalog, shop}: {catalog: Catalog; shop: Shop
                 type="button"
                 className={`assistant-mic${listening ? " is-listening" : ""}`}
                 disabled={!voice || busy}
-                aria-label={listening ? (bn ? "মাইক বন্ধ করুন" : "Stop microphone") : (bn ? "ভয়েসে বলুন" : "Speak voice")}
-                title={listening ? (bn ? "মাইক বন্ধ করুন" : "Stop microphone") : (bn ? "ভয়েসে বলুন" : "Speak voice")}
+                aria-label={listening ? (bn ? "মাইক বন্ধ করুন" : "Stop microphone") : (bn ? "বাংলায় বলুন" : "Speak Bangla")}
+                title={bn ? "বাংলায় বলুন" : "Speak Bangla"}
                 aria-pressed={listening}
                 onClick={speak}
               >

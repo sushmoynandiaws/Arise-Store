@@ -53,13 +53,14 @@ export function CourierStatus({ order }: { order: Purchase }) {
     <div className="courier-status-card">
       <div className="courier-status-header">
         <div className="courier-badge-row">
-          <span className="courier-provider-tag">
-            <Truck size={15} />
-            {tracking?.provider || (bn ? "কুরিয়ার পার্সেল" : "Courier Parcel")}
-          </span>
-          {tracking?.tracking && (
-            <span className="courier-tracking-code">
-              {bn ? "ট্র্যাকিং:" : "Tracking:"} <strong>{tracking.tracking}</strong>
+          {tracking ? (
+            <p className="courier-tracking-code">
+              {tracking.provider} · {bn ? "ট্র্যাকিং নম্বর:" : "Tracking number:"} <strong>{tracking.tracking}</strong>
+            </p>
+          ) : (
+            <span className="courier-provider-tag">
+              <Truck size={15} />
+              {bn ? "কুরিয়ার পার্সেল" : "Courier Parcel"}
             </span>
           )}
         </div>
