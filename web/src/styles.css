@@ -65,7 +65,7 @@ textarea { resize: vertical; }
 .listing-page, .seller-page { padding-block: 28px 40px; }
 .narrow-page { max-width: 880px; }
 .muted { color: var(--muted); }
-.eyebrow { font-size: var(--text-meta); font-weight: 600; color: var(--muted); margin-bottom: 12px; }
+.eyebrow { font-size: var(--text-meta); font-weight: 700; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
 .text-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--primary); font-size: var(--text-label); font-weight: 700; }
 .text-link:hover { text-decoration: underline; text-underline-offset: 4px; }
 .preserve-lines { white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -5219,4 +5219,48 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--primary-glow);
   outline: none;
+}
+
+/* ==========================================================================
+   Typographic Polish & Metric Tuning (Impeccable Typeset)
+   ========================================================================== */
+:lang(bn) {
+  --line-body: 1.72;
+}
+
+:lang(bn) .eyebrow {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+:lang(bn) :is(p, .preserve-lines, .notice p, .trust-stat-badge small) {
+  line-height: var(--line-body);
+}
+
+/* Tabular Numerals for Currency, Quantity, Phones & Order References */
+input[type="tel"],
+.checkout-phone-input,
+.quick-track-input,
+.variant-pill-price,
+.product-quantity input,
+.detail-price,
+.order-coupon-pill {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Progressive Line Wrapping per Matthew Butterick's Rules */
+h1, h2, h3, h4, .modal-title-row h2 {
+  text-wrap: balance;
+}
+
+p, .notice p, .track-help-copy p, .quick-track-card p, .product-brief p {
+  text-wrap: pretty;
+}
+
+/* Relaxed product description clamp on desktop */
+@media (min-width: 641px) {
+  .product-brief p {
+    -webkit-line-clamp: 4;
+  }
 }
