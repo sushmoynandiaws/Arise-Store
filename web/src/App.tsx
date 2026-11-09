@@ -68,6 +68,7 @@ import {
   Info,
   Star,
   Truck,
+  Sparkles,
 } from "./icons.js";
 import {
   api,
@@ -1953,6 +1954,26 @@ function Home() {
             </div> : catalog ? <p className="discovery-empty">{lang === "bn" ? "এখনও কোনো প্রোডাক্ট প্রকাশ করা হয়নি।" : "No products are published yet."}</p> : catalogError ? <p className="discovery-empty">{lang === "bn" ? "প্রোডাক্ট লোড করা যায়নি। নিচে পুনরায় চেষ্টা করুন।" : "Products could not be loaded. Use Try again in the product section below."}</p> : <Loading />}
           </aside>
         </section>
+        <aside className="benefit-strip" aria-label={lang === "bn" ? "মার্কেটপ্লেস সুবিধা" : "Marketplace highlights"}>
+          <div className="container">
+            <span>
+              <ShieldCheck aria-hidden="true" />
+              <strong>{lang === "bn" ? "যাচাইকৃত স্বাধীন শপ" : "Verified Independent Shops"}</strong>
+            </span>
+            <span>
+              <Wallet aria-hidden="true" />
+              <strong>{lang === "bn" ? "নিরাপদ ডিজিটাল পেমেন্ট" : "Secure bKash & Digital Pay"}</strong>
+            </span>
+            <span>
+              <Truck aria-hidden="true" />
+              <strong>{lang === "bn" ? "রিয়েলটাইম কুরিয়ার ট্র্যাকিং" : "Live Courier Tracking"}</strong>
+            </span>
+            <span>
+              <Sparkles aria-hidden="true" />
+              <strong>{lang === "bn" ? "আর্টিশান ক্রাফট ও ডিজাইন" : "Artisan Craft & Originals"}</strong>
+            </span>
+          </div>
+        </aside>
         <HomeHeroSponsoredAd />
         <section className="container section marketplace-categories">
           <SectionTitle
