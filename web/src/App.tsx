@@ -1889,11 +1889,6 @@ function Home() {
   const categories = [
     ...new Set(catalog?.products.map((p) => p.category) || []),
   ].slice(0, 6);
-  const discoveryProducts = [...(catalog?.products || [])]
-    .sort((a, b) =>
-      Number(b.sales_enabled && stock(b) > 0) - Number(a.sales_enabled && stock(a) > 0) ||
-      Number(Boolean(b.image_url)) - Number(Boolean(a.image_url)))
-    .slice(0, 3);
   return (
     <>
       <main id="main">
@@ -1944,15 +1939,7 @@ function Home() {
               ))}
             </div>
           </div>
-          <aside className="discovery-shelf" aria-labelledby="discovery-title">
-            <div className="discovery-heading"><h2 id="discovery-title">{lang === "bn" ? "ক্যাটালগ থেকে" : "Inside the catalog"}</h2><Link to="/products">{lang === "bn" ? "সব দেখুন" : "View all"}<ArrowRight size={16} /></Link></div>
-            {catalog?.products.length ? <div className="discovery-picks">
-              {discoveryProducts.map(product => <Link className="discovery-pick" key={product.id} to={productPath(product, catalog)}>
-                <Art product={product} />
-                <span className="discovery-pick-info"><small>{product.category}</small><strong>{product.name}</strong><span>{product.variants.length > 1 ? (lang === "bn" ? "শুরু " : "From ") : ""}{money(minimumPrice(product), product.currency)}</span></span>
-              </Link>)}
-            </div> : catalog ? <p className="discovery-empty">{lang === "bn" ? "এখনও কোনো প্রোডাক্ট প্রকাশ করা হয়নি।" : "No products are published yet."}</p> : catalogError ? <p className="discovery-empty">{lang === "bn" ? "প্রোডাক্ট লোড করা যায়নি। নিচে পুনরায় চেষ্টা করুন।" : "Products could not be loaded. Use Try again in the product section below."}</p> : <Loading />}
-          </aside>
+
         </section>
         <aside className="benefit-strip" aria-label={lang === "bn" ? "মার্কেটপ্লেস সুবিধা" : "Marketplace highlights"}>
           <div className="container">
