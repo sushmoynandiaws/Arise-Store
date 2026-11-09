@@ -202,9 +202,11 @@ export function ShoppingAssistant({catalog, shop}: {catalog: Catalog; shop: Shop
         aria-haspopup="dialog"
         aria-label={bn ? "AI সহকারী" : "AI assistant"}
       >
-        <Sparkles size={21} />
-        <span>
-          {bn ? "Shop সহকারী" : "Shop assistant"}
+        <span className="assistant-launch-icon" aria-hidden="true">
+          <Sparkles size={21} />
+        </span>
+        <span className="assistant-launch-details">
+          <span className="assistant-launch-title">{bn ? "Shop সহকারী" : "Shop assistant"}</span>
           <small>{shop.name}</small>
         </span>
       </button>
