@@ -25,7 +25,6 @@ import {
 import {
 
   ArrowRight,
-  ArrowUpRight,
   ArrowLeft,
   Search,
   ShoppingBag,
@@ -1660,9 +1659,6 @@ function ProductCard({ product }: { product: Product }) {
             {product.variants.length > 1 && <small>{lang === "bn" ? "শুরু " : "From "}</small>}
             {money(minimumPrice(product), product.currency)}
           </span>
-          <Link to={productPath(product, catalog!)} className="card-buy" aria-label={`View options for ${product.name}`}>
-            <ArrowUpRight size={18} />
-          </Link>
         </div>
       </div>
     </article>
@@ -1948,7 +1944,7 @@ function Home() {
             </div>
           </div>
           <aside className="discovery-shelf" aria-labelledby="discovery-title">
-            <div className="discovery-heading"><h2 id="discovery-title">{lang === "bn" ? "ক্যাটালগ থেকে" : "Inside the catalog"}</h2><Link to="/products">{lang === "bn" ? "সব দেখুন" : "View all"}<ArrowUpRight size={16} /></Link></div>
+            <div className="discovery-heading"><h2 id="discovery-title">{lang === "bn" ? "ক্যাটালগ থেকে" : "Inside the catalog"}</h2><Link to="/products">{lang === "bn" ? "সব দেখুন" : "View all"}<ArrowRight size={16} /></Link></div>
             {catalog?.products.length ? <div className="discovery-picks">
               {discoveryProducts.map(product => <Link className="discovery-pick" key={product.id} to={productPath(product, catalog)}>
                 <Art product={product} />
