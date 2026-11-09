@@ -1884,8 +1884,6 @@ function Home() {
   const platform = usePlatformSettings();
   const { catalog, catalogError, reloadCatalog } = useMarket();
   const { t, lang } = useLang();
-  const [query, setQuery] = useState("");
-  const navigate = useNavigate();
   const categories = [
     ...new Set(catalog?.products.map((p) => p.category) || []),
   ].slice(0, 6);
@@ -1894,71 +1892,82 @@ function Home() {
       <main id="main">
         <FlashDeals catalog={catalog}/>
         <section className="hero container">
-          <div className="hero-copy">
-            <p className="eyebrow">{lang === "bn" ? "আর্টিশান ক্রাফট ও ডিজিটাল স্টোর" : "Curated Digital & Artisan Craft"}</p>
-            <h1>
+          <div className="hero-content">
+            <div className="hero-badge">
+              <Sparkles size={15} aria-hidden="true" />
+              <span>{lang === "bn" ? "আর্টিশান ক্রাফট ও ডিজিটাল মার্কেটপ্লেস" : "Curated Digital & Artisan Marketplace"}</span>
+            </div>
+            <h1 className="hero-title">
               {platform.hero_title || (lang === "bn" ? (
                 <>স্বাধীন শপ থেকে<br />আপনার পছন্দের পণ্য</>
               ) : (
-                <>Products<br />from independent shops</>
+                <>Products crafted by<br />independent creators</>
               ))}
             </h1>
             <p className="hero-description">
               {platform.hero_description || (lang === "bn"
-                ? "স্বাধীন শপ থেকে পছন্দের পণ্য খুঁজুন। অপশন বেছে অর্ডার করুন, পেমেন্ট ও ডেলিভারির আপডেট দেখুন।"
-                : "Browse products from independent shops, choose your options and follow your order from checkout to delivery.")}
+                ? "লোকাল ওয়ার্কশপ, স্বাধীন ব্র্যান্ড ও ডিজিটাল স্টুডিও থেকে সরাসরি পছন্দের পণ্য অর্ডার করুন — যাচাইকৃত পেমেন্ট ও নির্ভরযোগ্য ডেলিভারি।"
+                : "Browse products from independent shops, choose your options, and follow your order from checkout to doorstep delivery.")}
             </p>
-            <form
-              className="hero-search"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const trimmed = query.trim();
-                navigate(trimmed ? `/products?q=${encodeURIComponent(trimmed)}` : "/products");
-              }}
-            >
-              <Search size={21} />
-              <label className="sr-only" htmlFor="home-search">
-                {lang === "bn" ? "পণ্য খুঁজুন" : "Search products"}
-              </label>
-              <input
-                id="home-search"
-                placeholder={lang === "bn" ? "পণ্য খুঁজুন..." : "Search products"}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              <button aria-label={lang === "bn" ? "প্রোডাক্ট খুঁজুন" : "Search products"}>
-                <ArrowRight size={22} />
-              </button>
-            </form>
-            <div className="hero-popular">
-              <span>{lang === "bn" ? "এক্সপ্লোর করুন:" : "Explore"}</span>
-              {categories.slice(0, 3).map((category) => (
-                <Link key={category} to={`/products?category=${encodeURIComponent(category)}`}>
-                  {category}
-                </Link>
-              ))}
+            <div className="hero-actions">
+              <Link to="/products" className="button primary hero-btn hero-primary-cta">
+                <ShoppingBag size={18} aria-hidden="true" />
+                <span>{lang === "bn" ? "পণ্য ব্রাউজ করুন" : "Browse products"}</span>
+                <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+              <Link to="/shops" className="button secondary hero-btn hero-secondary-cta">
+                <Store size={18} aria-hidden="true" />
+                <span>{lang === "bn" ? "স্বাধীন শপসমূহ" : "Explore shops"}</span>
+              </Link>
             </div>
+            {categories.length > 0 && (
+              <div className="hero-quick-filters">
+                <span className="hero-filter-label">{lang === "bn" ? "জনপ্রিয় ক্যাটাগরি:" : "Trending:"}</span>
+                <div className="hero-filter-chips">
+                  {categories.map((category) => (
+                    <Link
+                      key={category}
+                      to={`/products?category=${encodeURIComponent(category)}`}
+                      className="hero-chip"
+                    >
+                      {category}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-
         </section>
         <aside className="benefit-strip" aria-label={lang === "bn" ? "মার্কেটপ্লেস সুবিধা" : "Marketplace highlights"}>
           <div className="container">
-            <span>
-              <ShieldCheck aria-hidden="true" />
-              <strong>{lang === "bn" ? "যাচাইকৃত স্বাধীন শপ" : "Verified Independent Shops"}</strong>
-            </span>
-            <span>
-              <Wallet aria-hidden="true" />
-              <strong>{lang === "bn" ? "নিরাপদ ডিজিটাল পেমেন্ট" : "Secure bKash & Digital Pay"}</strong>
-            </span>
-            <span>
-              <Truck aria-hidden="true" />
-              <strong>{lang === "bn" ? "রিয়েলটাইম কুরিয়ার ট্র্যাকিং" : "Live Courier Tracking"}</strong>
-            </span>
-            <span>
-              <Sparkles aria-hidden="true" />
-              <strong>{lang === "bn" ? "আর্টিশান ক্রাফট ও ডিজাইন" : "Artisan Craft & Originals"}</strong>
-            </span>
+            <div className="benefit-card">
+              <span className="benefit-icon" aria-hidden="true"><ShieldCheck size={22} /></span>
+              <div className="benefit-info">
+                <strong>{lang === "bn" ? "যাচাইকৃত স্বাধীন শপ" : "Verified Independent Shops"}</strong>
+                <small>{lang === "bn" ? "সরাসরি ক্রিয়েটর ও কারিগরদের শপ" : "Authentic source-verified sellers"}</small>
+              </div>
+            </div>
+            <div className="benefit-card">
+              <span className="benefit-icon" aria-hidden="true"><Wallet size={22} /></span>
+              <div className="benefit-info">
+                <strong>{lang === "bn" ? "নিরাপদ ডিজিটাল পেমেন্ট" : "Secure bKash & Digital Pay"}</strong>
+                <small>{lang === "bn" ? "বিকাশ, নগদ ও কার্ডে স্বয়ংক্রিয় লেনদেন" : "Protected local payment gateways"}</small>
+              </div>
+            </div>
+            <div className="benefit-card">
+              <span className="benefit-icon" aria-hidden="true"><Truck size={22} /></span>
+              <div className="benefit-info">
+                <strong>{lang === "bn" ? "লাইভ কুরিয়ার ট্র্যাকিং" : "Live Courier Tracking"}</strong>
+                <small>{lang === "bn" ? "ডোরস্টেপ ডেলিভারি ও রিয়েলটাইম আপডেট" : "Realtime parcel delivery tracking"}</small>
+              </div>
+            </div>
+            <div className="benefit-card">
+              <span className="benefit-icon" aria-hidden="true"><Sparkles size={22} /></span>
+              <div className="benefit-info">
+                <strong>{lang === "bn" ? "আর্টিশান ক্রাফট ও ডিজাইন" : "Artisan Craft & Originals"}</strong>
+                <small>{lang === "bn" ? "শতভাগ খাঁটি দেশীয় সৃষ্টি" : "Direct from creators & designers"}</small>
+              </div>
+            </div>
           </div>
         </aside>
         <HomeHeroSponsoredAd />

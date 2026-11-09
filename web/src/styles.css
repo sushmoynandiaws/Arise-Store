@@ -188,115 +188,124 @@ textarea { resize: vertical; }
 
 /* Artwork and short, factual product previews lead marketplace discovery. */
 .hero {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding-block: 44px 32px;
-  max-width: 800px;
+  padding-block: 52px 36px;
+  max-width: 860px;
   margin-inline: auto;
 }
-.hero-copy {
+.hero-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
 }
-.hero-copy .eyebrow {
+.hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
   font-size: var(--text-small);
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--primary);
   background: var(--primary-light);
-  padding: 6px 16px;
+  padding: 6px 18px;
   border-radius: var(--radius-pill);
   border: 1px solid color-mix(in srgb, var(--primary) 14%, transparent);
 }
-.hero h1 {
+.hero-badge svg { color: var(--primary); }
+.hero-title {
   font-family: var(--font-heading);
-  font-size: clamp(34px, 4vw, 50px);
-  font-weight: 800;
-  line-height: 1.14;
-  letter-spacing: -.03em;
-  max-width: 680px;
+  font-size: clamp(36px, 4.2vw, 54px);
+  font-weight: 850;
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  max-width: 760px;
   color: var(--ink);
-  margin-inline: auto;
+  margin: 0 auto;
 }
-:lang(bn) .hero h1 {
+:lang(bn) .hero-title {
   letter-spacing: 0;
   line-height: 1.25;
 }
 .hero-description {
-  margin-top: 16px;
-  max-width: 560px;
+  margin-top: 18px;
+  max-width: 600px;
   color: var(--muted);
   font-size: 17px;
-  line-height: 1.6;
+  line-height: 1.65;
   margin-inline: auto;
 }
-.hero-search {
+.hero-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: var(--surface);
-  border: 1.5px solid var(--line-strong);
+  justify-content: center;
+  gap: 14px;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+.hero-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 24px;
   border-radius: var(--radius-pill);
-  padding: 6px 8px 6px 20px;
-  margin-top: 26px;
-  width: 100%;
-  max-width: 580px;
-  box-shadow: var(--shadow-sm);
-  transition: border-color 180ms ease, box-shadow 180ms ease;
+  font-weight: 650;
+  font-size: 15px;
+  text-decoration: none;
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms ease, background-color 180ms ease;
 }
-.hero-search:focus-within, .catalog-search:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-glow), var(--shadow-sm);
-}
-.hero-search > svg { color: var(--primary); flex-shrink: 0; }
-.hero-search input {
-  width: 100%;
-  border: 0;
-  padding: 10px 0;
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--ink);
-  box-shadow: none;
-  background: none;
-}
-.hero-search input:focus, .catalog-search input:focus { outline: none; box-shadow: none; }
-.hero-search button {
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  color: var(--surface);
+.hero-primary-cta {
   background: var(--primary);
-  transition: background-color 160ms ease, transform 160ms var(--ease-spring);
+  color: var(--inverse);
+  box-shadow: 0 4px 18px rgba(99, 54, 214, 0.28);
 }
-.hero-search button:hover { background: var(--primary-dark); transform: scale(1.04); }
-.hero-search button:active { transform: scale(0.96); }
-.hero-popular {
+.hero-primary-cta:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(99, 54, 214, 0.38);
+}
+.hero-secondary-cta {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1.5px solid var(--line-strong);
+  box-shadow: var(--shadow-sm);
+}
+.hero-secondary-cta:hover {
+  background: var(--surface-hover);
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-panel);
+}
+.hero-quick-filters {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
   gap: 8px 10px;
-  color: var(--muted);
-  font-size: var(--text-small);
-  margin-top: 16px;
+  margin-top: 24px;
 }
-.hero-popular > span { font-weight: 600; color: var(--muted); }
-.hero-popular a {
+.hero-filter-label {
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--muted);
+}
+.hero-filter-chips {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.hero-chip {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
+  min-height: 36px;
   padding: 4px 14px;
   border-radius: var(--radius-pill);
   background: var(--surface);
@@ -304,171 +313,89 @@ textarea { resize: vertical; }
   color: var(--ink);
   font-size: var(--text-small);
   font-weight: 550;
+  text-decoration: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
   transition: all 160ms ease;
 }
-.hero-popular a:hover {
-  color: var(--primary);
+.hero-chip:hover {
   background: var(--primary-light);
+  color: var(--primary);
   border-color: color-mix(in srgb, var(--primary) 22%, transparent);
   transform: translateY(-1px);
 }
-.discovery-shelf {
-  min-width: 0;
-  padding: 22px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-hero);
-  background: var(--surface);
-  box-shadow: var(--shadow-panel);
-}
-.discovery-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 16px;
-}
-.discovery-heading h2 {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--title-card);
-  font-weight: 750;
-  color: var(--ink);
-}
-.discovery-heading h2::before {
-  content: "";
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--primary);
-  box-shadow: 0 0 0 2px var(--primary-light);
-}
-.discovery-heading > a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  color: var(--primary);
-  font-size: var(--text-label);
-  font-weight: 650;
-  transition: transform 160ms ease, color 160ms ease;
-}
-.discovery-heading > a:hover {
-  color: var(--primary-dark);
-  transform: translateX(2px);
-}
-.discovery-picks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-.discovery-pick {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  gap: 10px;
-  padding: 8px;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  transition: transform 200ms var(--ease-out-quart), box-shadow 200ms, border-color 200ms, background 200ms;
-}
-.discovery-pick:hover {
-  background: var(--surface-hover);
-  border-color: var(--line);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-.discovery-pick:first-child { grid-row: span 2; }
-.discovery-pick .product-art {
-  width: 100%;
-  height: 82px;
-  aspect-ratio: auto;
-  border-radius: 10px;
-  overflow: hidden;
-}
-.discovery-pick:first-child .product-art {
-  flex: 1;
-  min-height: 190px;
-  aspect-ratio: auto;
-  border-radius: 12px;
-}
-.discovery-pick-info { min-width: 0; }
-.discovery-pick small {
-  display: block;
-  color: var(--primary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-.discovery-pick strong {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  font-size: var(--text-label);
-  line-height: 1.4;
-  margin-block: 2px 4px;
-  overflow-wrap: anywhere;
-  color: var(--ink);
-}
-.discovery-pick:hover strong { color: var(--primary); }
-.discovery-pick-info > span { color: var(--ink); font-size: var(--text-label); font-weight: 750; font-variant-numeric: tabular-nums; }
-.discovery-pick .art-digital-badge { padding: 12px; gap: 8px; }
-.discovery-pick .art-emblem { width: 40px; height: 40px; border-radius: 12px; }
-.discovery-pick:not(:first-child) .art-brand-pill { display: none; }
-.discovery-empty { color: var(--muted); padding-block: 40px; text-align: center; font-size: var(--text-small); }
 .benefit-strip {
   border-block: 1px solid var(--line);
   background: var(--surface);
-  margin-top: 16px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  margin-block: 24px 36px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.02);
 }
 .benefit-strip .container {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
-  padding-block: 20px;
+  gap: 20px;
+  padding-block: 22px;
 }
-.benefit-strip span {
-  display: inline-flex;
+.benefit-card {
+  display: flex;
   align-items: center;
-  gap: 12px;
-  color: var(--ink);
-  font-size: var(--text-meta);
+  gap: 14px;
+  min-width: 0;
 }
-.benefit-strip svg {
+.benefit-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--primary-light);
   color: var(--primary);
-  width: 22px;
-  height: 22px;
   flex-shrink: 0;
+  border: 1px solid color-mix(in srgb, var(--primary) 12%, transparent);
 }
-.benefit-strip strong {
+.benefit-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.benefit-info strong {
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-:lang(bn) .benefit-strip strong {
+:lang(bn) .benefit-info strong {
   letter-spacing: 0;
+}
+.benefit-info small {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .section-heading {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   gap: 20px;
-  margin-bottom: 22px;
-  padding-top: 8px;
+  margin-bottom: 24px;
+  padding-top: 12px;
 }
 .section-heading .eyebrow { margin-bottom: 8px; }
 .section-heading h2 {
   font-size: var(--title-section);
-  font-weight: 750;
+  font-weight: 800;
   letter-spacing: -0.025em;
   color: var(--ink);
 }
-:lang(bn) .section-heading h2 { letter-spacing: 0; }
+:lang(bn) .section-heading h2 {
+  letter-spacing: 0;
+}
 .section-heading > .text-link {
   display: inline-flex;
   align-items: center;
@@ -477,14 +404,19 @@ textarea { resize: vertical; }
   color: var(--primary);
   font-size: var(--text-label);
   font-weight: 650;
+  text-decoration: none;
   transition: transform 160ms ease, color 160ms ease;
 }
 .section-heading > .text-link:hover {
   color: var(--primary-dark);
-  transform: translateX(2px);
+  transform: translateX(3px);
 }
 .marketplace-categories { padding-top: 8px; }
-.category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
 .category-card {
   display: flex;
   align-items: center;
@@ -492,9 +424,10 @@ textarea { resize: vertical; }
   min-width: 0;
   padding: 14px 16px;
   border: 1px solid var(--line);
-  border-radius: var(--r-card);
+  border-radius: 18px;
   background: var(--surface);
   box-shadow: var(--shadow-sm);
+  text-decoration: none;
   transition: transform 200ms var(--ease-out-quart), border-color 200ms, box-shadow 200ms, background 200ms;
 }
 .category-card:hover {
@@ -504,21 +437,46 @@ textarea { resize: vertical; }
   box-shadow: var(--shadow-panel);
 }
 .category-card > .product-art {
-  width: 60px;
-  height: 60px;
-  border-radius: 12px;
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
   overflow: hidden;
   flex-shrink: 0;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 .category-card .art-digital-badge { padding: 10px; }
-.category-card .art-emblem { width: 36px; height: 36px; border: 0; background: transparent; }
+.category-card .art-emblem { width: 38px; height: 38px; border: 0; background: transparent; }
 .category-card .art-brand-pill { display: none; }
 .category-card > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
-.category-card strong { display: block; font-size: 15px; font-weight: 700; color: var(--ink); }
-.category-card small { display: block; color: var(--muted); font-size: var(--text-small); margin-top: 2px; }
-.category-card > svg { color: var(--muted); flex-shrink: 0; transition: transform 160ms ease, color 160ms ease; }
-.category-card:hover > svg { color: var(--primary); transform: translateX(3px); }
+.category-card strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  transition: color 180ms ease;
+}
+.category-card:hover strong {
+  color: var(--primary);
+}
+.category-card small {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--muted);
+  background: var(--surface-ground);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+.category-card > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: transform 160ms ease, color 160ms ease;
+}
+.category-card:hover > svg {
+  color: var(--primary);
+  transform: translateX(3px);
+}
 .product-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
 .product-card { min-width: 0; overflow: hidden; border-radius: var(--r-card); border: 1px solid var(--line); background: var(--surface); transition: box-shadow 220ms var(--ease-out-quart), transform 220ms var(--ease-out-quart), border-color 220ms;  box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
 .product-card:hover { border-color: var(--line-strong); transform: translateY(-2px); box-shadow: var(--shadow-panel); }
@@ -1072,13 +1030,8 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
 }
 @media (max-width: 768px) {
   .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
-  .hero { grid-template-columns: minmax(0, 1fr); gap: 24px; }
-  .discovery-picks { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .discovery-pick:first-child { grid-row: auto; }
-  .discovery-pick .product-art, .discovery-pick:first-child .product-art { height: 150px; min-height: 0; flex: auto; }
-  .hero-copy { max-width: 600px; }
-
-  .hero-search { max-width: 560px; }
+  .hero { padding-block: 40px 28px; }
+  .hero-content { max-width: 100%; }
 
   .product-detail { grid-template-columns: minmax(0, 1fr); gap: 32px; }
   .product-summary { grid-column: 1; grid-row: 2; }
@@ -1119,27 +1072,26 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
   .store-brand { gap: 8px; }
   .store-brand strong { font-size: var(--text-body); }
   .store-brand .shop-avatar { width: 40px; height: 40px; border-radius: 12px; }
-  .hero { padding-block: 28px; }
-  .hero-search, .hero-popular { display: none; }
-  .discovery-shelf { padding: 16px; }
-  .discovery-picks { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-  .discovery-pick:first-child { grid-column: 1 / -1; display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; }
-  .discovery-pick .product-art, .discovery-pick:first-child .product-art { height: 88px; }
-  .discovery-pick:first-child .art-brand-pill { display: none; }
+  .hero { padding-block: 28px 20px; }
+  .hero-actions { width: 100%; gap: 10px; }
+  .hero-btn { width: 100%; justify-content: center; }
+  .hero-quick-filters { margin-top: 20px; }
+  .hero-filter-chips { justify-content: center; }
   .category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .category-card { flex-direction: column; align-items: start; padding: 12px; gap: 10px; }
   .category-card > .product-art { width: 100%; height: 88px; }
   .category-card > svg { display: none; }
   .category-card strong { font-size: var(--text-label); }
 
-  .hero-description {  margin-top: 20px; }
-  .hero-search { margin-top: 24px; padding-left: 16px; gap: 8px; }
+  .hero-description { margin-top: 14px; font-size: 15px; }
 
-
-  .benefit-strip { margin-bottom: 16px; }
-  .benefit-strip .container { gap: 16px; padding-block: 20px; }
-  .benefit-strip span { align-items: start; gap: 8px; font-size: var(--text-small); }
-  .benefit-strip svg { width: 16px; height: 16px; margin-top: 2px; }
+  .benefit-strip { margin-block: 16px 24px; }
+  .benefit-strip .container { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding-block: 16px; }
+  .benefit-card { gap: 10px; }
+  .benefit-icon { width: 38px; height: 38px; border-radius: 12px; }
+  .benefit-icon svg { width: 18px; height: 18px; }
+  .benefit-info strong { font-size: 13px; }
+  .benefit-info small { font-size: 11px; }
   .section-heading { align-items: start; flex-direction: column; gap: 4px; margin-bottom: 20px; }
   .section-heading h2 { font-size: var(--title-section); }
   .section-heading > .text-link { font-size: var(--text-meta); }
@@ -1256,8 +1208,7 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
   .product-meta { margin-top: 4px; }
   .art-emblem { width: 72px; height: 72px; }
   .art-brand-pill { font-size: var(--text-body); }
-  .hero-popular { gap: 4px 12px; }
-  .hero-popular > span { width: 100%; }
+  .benefit-strip .container { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .product-art.large-art { height: 288px; }
   .product-purchase-actions { flex-direction: column; }
   .product-quantity { align-self: stretch; justify-content: space-between; }
@@ -3665,8 +3616,8 @@ footer { padding: 48px max(40px, calc((100% - 1200px) / 2)) 0; border-top: 1px s
 :is(.icon-button, .chip, .category-pill-btn, .lang-pill-btn) { transition: background-color 180ms, color 180ms, transform 180ms var(--ease-out-quart); }
 :is(.icon-button, .chip, .category-pill-btn, .lang-pill-btn):active { transform: scale(.96); }
 :is(.faq-section summary, .branding-details summary) svg { transition: transform 220ms var(--ease-out-quart); }
-:is(.shop-card, .shop-discovery, .discovery-pick) { transition: background-color 180ms, border-color 180ms; }
-:is(.shop-card, .discovery-pick):hover { background: var(--surface-hover); }
+:is(.shop-card, .shop-discovery) { transition: background-color 180ms, border-color 180ms; }
+:is(.shop-card):hover { background: var(--surface-hover); }
 :is(.top-flash-close, .sticky-ad-close-btn, .clear-search-pill) { min-width: 44px; min-height: 44px; }
 :is(.contact-chip, .shop-social-links a) { min-height: 44px; }
 .contact-chip { background: var(--wash); color: var(--ink); border-color: var(--line); }
